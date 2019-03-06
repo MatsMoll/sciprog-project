@@ -1,0 +1,200 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[norsk]{babel}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{hyperref}
+
+\frenchspacing
+
+\definecolor{grey}{rgb}{.95, .95, .95}
+\lstset{basicstyle=\footnotesize\ttfamily,language=Python,backgroundcolor=\color{grey}}
+
+\begin{document}
+
+\title{HDR-avbildning: rekonstruksjon og rendring}
+\author{Prosjektoppgave  i IMT3881 Vitenskapelig programmering}
+\date{Våren 2019}
+
+\maketitle
+
+\section{Innledning}
+
+Ved fotografering av utendørs scener kan det dynamiske omfanget, altså forholdet mellom luminansen til lyseste og mørkeste punkt i scenen, være meget høyt. Det er ikke uvanlig at det dynamiske omfanget nærmer seg en million, $10^6$. Dette gjelder f.eks. for scener med direkte sollys og områder med mørke skygger, eller fotografier som inneholder elementer både innendørs og utendørs. For billedsensorer oppgis som regel det dynamiske omfanget i EVs – «Exposure Values» – på en log2-skala, og de beste sensorene ligger nå på 14.8 EVs som gir et dynamisk omfang på $2^{14.8} \approx 28526$,\footnote{\url{https://www.dxomark.com/}} som jo er vesentlig lavere enn $10^6$.
+
+For å bøte på dette problemet – som riktignok er blitt mindre med årene ettersom sensorene er blitt bedre – er ulike teknikker for HDR-avbilding («High Dynamic Range Imaging») utviklet. Den vanligste teknikken, som ble utviklet av Debevec og Malik i 1997~\cite{Debevec:97}, går ut på at man tar en sekvens med bilder med ulik eksponeringstid, slik at alle punkter i bildet får minst én, helst flere, gode eksponeringer der de hverken er over- eller underekssponert. Disse ulike bildene settes så sammen ved hjelp av beregningsteknikker til et HDR-bilde med mye høyere dynamisk omfang enn det sensoren kan fange i én eksponering.
+
+Den neste utfordringen får man når slike bilder skal vises frem. En god LCD-skjerm har i dag et dynamisk omfang (for skjermer kalles den ofte statisk kontrast) på ca.~30\,000, mens projektorer, for ikke snakke om skrivere, har en vesentlig lavere dynamikk. Med andre ord må HDR-bildene tilpasses enheten de skal gjengis på. Denne prosessen kalles rendring av HDR-bilder, eller «tone mapping». Det finnes to hovedkategorier rendring av HDR-bilder: global og lokal. I en global rendring finner man en funksjon («kurve») og benytter denne for alle pixler i bildet. I en lokal rendring forsøker man heller å gjenskape de lokale forskjellene i bildet uten å ta hensyn til at alle pixler nødvendigvis bør behandles likt.
+
+I dette prosjektet skal dere få implementere og prøve ut noen vanlige metoder for HDR-avbildning; både rekonstruksjon og rendring.
+
+\section{Rekonstruksjon av HDR-bilder}
+\label{sec:debevec_malik}
+
+En teknikk utviklet av Debevec og Malik~\cite{Debevec:97} for å rekonstruere HDR-bilder for \emph{statiske scener}, er å ta flere bilder (med kameraet på stativ) med ulik eksponeringstid, og så sette dem sammen til et HDR-bilde («High Dynamic Range») i ettertid. Dette gjøres ved at man estimerer kameraresponskurven samtidig som man estimerer den faktiske lysheten (radiansen) i scenen som et stort, sammensatt minste-kvadraters problem. For å unngå ustabiliteter i løsningen som følge av støy i bildene, må man gjerne legge noen føringer om glatthet på kameraresponskurven i tillegg. Debevec og Maliks originalartikkel gjengir en MATLAB-kode for algortimen, så den skulle være grei å implemenentere i Python. Bare husk på at array-er i MATLAB indekseres fra 1, mens de i Python indekseres fra 0. Bruk \texttt{np.linalg.leastsq} til å løse ligningssystemet.
+
+I praksis får man raskt problemer med størrelsen på systemmatrisen $A$. En måte å håndtere dette på, er å bruke færre eksponeringer og vesentlig lavere oppløsning for bildene som brukes for å genrere responskurven, for så å benytte den rekonstruerte responskurven til å rendre fullskala-bildene. Et annet praktisk problem man raskt kommer borti er at de ulike eksponeringene ikke er helt nøyaktig opplinjert og at man derfor må korrigere for dette først.
+
+\section{Global HDR-rendring}
+
+\subsection{Én felles kurve per kanal}
+\label{sec:glob:felles}
+
+Den enkleste, men langt fra beste, måten å rendre et HDR-bilde på, er ved å anvende en global funksjon («kurve») på alle pixel-verdiene. Altså å mappe $u \mapsto f(u)$. Vanlige mappinger er logaritme, $f(u) = \ln(u)$, eller en såkalt gammafunksjon, $f(u) = u^\gamma$, der $\gamma \in (0, 1)$. Man kan også benytte andre mer avanserte funksjoner.
+
+\subsection{Luminans og kromatisitet hver for seg}
+\label{sec:glob:lum_krom}
+
+Et problem med å benytte én felles kurve per kanal, er at fargene har en tendens til å bli vasket ut. Dette er fordi mettede farger kjennetegnes ved at det er store forskjeller på pixelverdiene i de ulike fargekanalene, og med en komprimering vil disse forskjellene bli mindre, og dermed også fargene bli mindre mettet. En måte å unngå dette på, er ved å dele bildet opp i luminans (lyshet) og kromatisitet (fargeinformasjon). Dersom bildet har kanalene $[R, G, B]$, kan vi for enkelhets skyld definere luminansen som $L=R+G+B$ og kromatisitet som $[R/L, G/L, B/L]$. Da kan HDR-rendringen gjøres på luminanskanalen alene, $L \mapsto f(L)$, og det rendrede fargebildet rekonstrueres som $f(L)[R/L, G/L, B/L]$.
+
+Denne teknikken kan igjen gi en kunstig høy fargemetning. En måte å løse dette på, er å lage en (vektet) blanding av disse to løsningene.
+
+\section{Lokal HDR-rendring}
+
+Det kan være vanskelig å finne en global funksjon som yter rettferdighet til både lyse og mørke partier i bildet. For å komme videre da, må vi over på metoder som behandler pixelverdiene i bildet ulik avhengig av hvor de er og hvordan konteksten i bildet er. Her finnes det et vell av metoder; vi skal se på noen.
+
+\subsection{Lineær spatiell filtrering}
+\label{sec:lok:lin}
+
+En metode går ut på å skille mellom små lokale detaljer og mer storskala endringer i bildet. Storskala-endringene i bildet kan finnes ved å lavpassfiltrere det originale bildet, $u_l = F(u_0)$ (gjøre det uskarpt, altså). Detaljene vil da være differansen mellom originalbildet og det lavpassfiltrerte, $u_h = u_0 - u_l$. Man kan så gjøre en rendring bare av storskalaendringene, $f(u_l)$ og så legge tilbake detaljene, $u_h$, altså $u_0 \mapsto u_h + f(u_l)$. Dette kan gjøres direkte i de lineære verdiene, eller i det logaritmiske domenet, og enten i alle kanaler, eller kun i luminanskanalen.
+
+\subsection{Ikke-lineær spatiell filtrering}
+\label{sec:lok:bilateral}
+
+Problemet med lineær spatiell filtrering er at det kan oppstå artefakter (særlig «haloer») nær skarpe kanter/overganger i bildet med stor kontrast. Dette problemet kan reduseres hvis det lineære filteret byttes ut med et kantbevarende lavpassfilter, f.eks. bilateral filtrering~\cite{Tomasi:98}. Ellers samme metode som over. Også dette kan gjøres direkte i de lineære verdiene, eller i det logaritmiske domenet, og enten i alle kanaler, eller kun i luminanskanalen.
+
+\subsection{Komprimering i gradientdomenet}
+\label{sec:fattal}
+
+Istedenfor å gjøre endringer direkte på pixelverdiene, foreslo Fattal \& al.~\cite{Fattal:02} å heller komprimere \emph{gradienten} (den deriverte) til bildet, og så rekonstruere det rendrede bildet fra den komprimerte gradienten ved hjelp av en teknikk som kalles «Poisson Image Editing» utviklet av Pérez \& al.~\cite{Perez:03}. Metoden går i korthet ut på at man representerer bildet man ønsker å komme frem til som en funksjon $u : \Omega \to C$, der $\Omega \subset \mathbb{R}^2$ er det rektangulære området hvor bildet er definert, og $C$ er fargerommet, vanligvis $C = [0, 1]$ for gråtonebilder og $C = [0, 1]^3$ for fargebilder. Bildet fremkommer som en løsning av Poisson-ligningen
+$$
+\frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2}
+\equiv \nabla^2 u = h,
+$$
+der randverdier på $\partial\Omega$ og funksjonen $h : \Omega \to \mathbb{R}^{\dim(C)}$ spesifiseres avhengig av hvilket problem som skal løses, og $u$ begrenses til $C$.
+
+I vårt tilfelle er da $$h = \nabla\cdot f(\nabla u_0),$$ der $f: \mathbb{R}^2 \to \mathbb{R}^2$ er en funksjon som komprimerer \emph{gradienten} til bildet. Som regel konstrueres $f$ slik at det bare er lengden til gradientvektoren som endres, ikke retningen. Her kan man, som tidligere, benytte ulike kompri\-merings\-funksjoner for lengden, f.eks. logaritme, gamma etc.
+
+En måte å løse Poisson-ligningen på er å iterere seg frem til løsningen vha. såkalt gradientnedstigning («gradient descent»). I praksis gjøres dette ved å innføre en kunstig tidsparameter og la løsningen utvikle seg mot konvergens:
+\begin{equation}
+\frac{\partial u}{\partial t} = \nabla^2 u - h.
+\label{eq:diffusjon}
+\end{equation}
+Når man velger denne fremgangsmåten, må man også velge en initialverdi for bildet, f.eks. lik originalbildet, $u(x, y, 0) = u_0(x, y)$, eller resultatet av en global/lokal komprimering, som over.
+
+To diskrete numeriske skjemaer for~(\ref{eq:diffusjon}) kan finnes ved henholdsvis eksplisitt og implisitt tidsintegrasjon og sentrerte differanser for de spatielle deriverte:
+\begin{align}
+  \frac{u^{n+1}_{i,j} - u^n_{i,j}}{\Delta t} &= \frac{1}{\Delta x^2}
+                                               (u^n_{i+1,j} +
+                                               u^n_{i-1,j} +
+                                               u^n_{i,j+1} +
+                                               u^n_{i,j-1} -4 
+                                               u^n_{i,j}) - h_{i,j},
+                                               \label{eq:eksplisitt}  \\
+  \frac{u^{n+1}_{i,j} - u^n_{i,j}}{\Delta t} &= \frac{1}{\Delta x^2}
+                                               (u^{n+1}_{i+1,j} +
+                                               u^{n+1}_{i-1,j} +
+                                               u^{n+1}_{i,j+1} +
+                                               u^{n+1}_{i,j-1} -4 
+                                               u^{n+1}_{i,j}) - h_{i,j}.
+                                               \label{eq:implisitt}
+\end{align}
+Det eksplisitte skjemaet~(\ref{eq:eksplisitt}) er noenlunde rett frem å implementere, mens det implisitte~(\ref{eq:implisitt}) er noe mer krevende, især for fargebilder. Sistnevnte løses enklest ved å skrive det på matriseform og bruke rutiner for glisne matriser i implementasjonen.
+
+Som randverdi er det naturlig å benytte Neumannbetingelsen $\partial u/\partial n = 0$, som kan implementeres på både forenklet og litt mer nøyaktig måte, jf. arbeidskrav~6.
+
+\subsection{Reduksjon av haloer}
+\label{sec:anisotrop}
+
+Da også denne metoden noen ganger kan føre til artefakter nær sterke kanter i bildet, kan også denne forbedres ved bruk av kantbevaring, jf. det bilaterale filteret over. Dette kan i praksis gjøres ved å innføre en posisjonsavhengig diffusjonsparameter $D : \Omega \to [0, 1]$, der $D = 0$ gir null diffusjon og $D = 1$ gir full diffusjon. Diffusjonsparameteren kan f.eks. beregnes fra gradienten til bildet som
+\begin{equation}
+  D(x, y) = \frac{1}{1 + \kappa ||\nabla u_0(x, y)||^2}\,,
+\end{equation}
+med $\kappa$ som en passende valgt konstant. Andre løsninger er også mulig, se~\cite{Perona:90}. Diffusjonsligningen~(\ref{eq:diffusjon}) endres da til
+\begin{equation}
+  \label{eq:lokal}
+  \frac{\partial u}{\partial t} = \nabla\cdot(D(\nabla u - f(\nabla u_0))),
+\end{equation}
+og løses for $\Omega$ med samme betingelser som over på $\partial\Omega$. Merk at det da må lages egne numeriske skjemaer for denne modifiserte ligningen. Merk også at hvis $D=1$ overalt, vil~(\ref{eq:lokal}) bli identisk med~(\ref{eq:diffusjon}).
+
+\section{Oppgave}
+
+\subsection{Praktisk gjennomføring}
+
+Prosjektet gjøres i grupper à 1–4 studenter. Én på gruppen lager en \emph{privat} fork av Bitbucket-repositoriet, men med \emph{arvede egenskaper} slik at kun brukeren selv og emneansvarlig har innsyn. Legg så til de øvrige gruppemedlemmene i prosjektet. La både kode og rapport bo i repositoriet (det er fremdeles mulig å lenke repositoriet til Overleaf om man skulle ønske det. Gjør hyppige og små nok commits til repositoriet til at det blir mulig å følge utviklingen av prosjektet i ettertid. Bruk gjerne grener («branches») for enklere å kunne sjekke inn («commit») kode uten å ha en fungerende løsning. Det vil altså i praksis si flere og hyppigere innsjekkinger enn man strengt tatt ville hatt i en realistisk utviklingssituasjon.
+
+\subsection{Implementasjon}
+
+Implementer et selvvalgt utvalg – jo større, desto bedre, såklart – av metodene indikert over:
+\begin{itemize}[noitemsep]
+\item Rekonstruksjon av HDR-bilder:
+  \begin{itemize}
+  \item Implementer Debevec og Maliks metode for rekonstruksjon av HDR-bilder fra et sett med gråtonebilder med ulik eksponering~\cite{Debevec:97}, se avsnitt~\ref{sec:debevec_malik}.
+  \item Utvid Debevec og Maliks metode til også å fungere for fargebilder (enkel liten utvidelse).
+  \item Utvid Debevec og Maliks metode til også å fungere med høyoppløselige bilder.
+  \item Utvid Debevec og Maliks metode til å ta høyde for at bildene ikke nødvendigvis er perfekt opplinjert. Korriger for dette vha. OpenCV\footnote{\url{https://opencv.org/}} (eksempelbildene er allerede opplinjert).
+  \end{itemize}
+\item Rendring av HDR-bilder. Hvis metodene for rekonstruksjon av HDR-bilder over ikke er implementert (ennå), kan dere lese inn HDR-bilder direkte fra OpenExr-filene:
+  \begin{itemize}
+  \item Implementer ulike globale metoder for HDR-rendring med ulike kurver per kanal og ved å skille mellom behandling av luminans og kromatisitet, se avsnitt~\ref{sec:glob:felles}. og~\ref{sec:glob:lum_krom}
+  \item Implementer lokal HDR-rendring med lineær spatiell filtrering. Bruk forskjellige kurver for storskala luminans, se avsnitt~\ref{sec:lok:lin}.
+  \item Implementer lokal HDR-rendring med bilateral spatiell filtrering. Bruk forskjellige kurver for storskala luminansen, se avsnitt~\ref{sec:lok:bilateral}.
+  \item Implementer det eksplisitte skjemaet~(\ref{eq:eksplisitt}) for Fattals metode for HDR-rend\-ring~\cite{Fattal:02} av gråtonebilder. Bruk forenklede Neumann-betingelser med null derivert for randen (jf. arbeidskrav 6).
+  \item Forbedre Fattal-implementasjonen med bruk av mer nøyaktige Neumann-betingelser (jf. arbeidskrav 6).
+  \item Utvid Fattals metode for HDR-rendring~\cite{Fattal:02} til også å fungere for fargebilder (enkel liten  utvidelse).
+  \item Implementer den forbedrede varianten av Fattals metode med lokal diffusjonsparameter. Prøv med ulike funksjoner for å bremse diffusjonen, se avsnitt~\ref{sec:anisotrop}.
+  \item Implementer det implisitte numeriske skjemaet~(\ref{eq:implisitt}) vha. glisne matriser («sparse matrices»)\footnote{\url{https://docs.scipy.org/doc/scipy/reference/sparse.html}} og benytt det for alle de implementerte anvendelsene.
+  \item Undersøk nøyaktigheten av de implementerte løsningene vha. av metoden med konstruerte løsninger (jf. arbeidskrav 6). Se spesielt på forskjellen mellom de to implementasjonene av randverdier.
+  \end{itemize}
+\item Det virkelige liv~\dots~:
+  \begin{itemize}
+  \item Lag en applikasjon med grafisk brukergrensesnitt som gir brukeren mulighet til å utføre alle de implementerte operasjonene interaktivt. Bruk f.eks. PyQt5.\footnote{\url{https://www.riverbankcomputing.com/software/pyqt/intro}}
+  \item Hvis en på gruppen har et systemkamera, ta en serie med bilder av en scene med høyt dynamisk omfang og prøv ut de implementerte metodene. Det er viktig at alt av instillinger settes til manuell kontroll (hvitbalanse, ISO, blender, eksponeringstid), og at kun eksponeringstiden varieres. Resultatet blir best hvis man lagrer bildene i et RAW-format. Dere kan bli nødt til å gjøre noe med både opplinjering og hvitbalanse, og det er jo et studium i seg selv~\dots
+  \end{itemize}
+\end{itemize}
+Det er også anledning til å gå utover det foreslåtte; et raskt litteratursøk på «HDR» og «tone mapping» skulle gi rikelig med idéer til utvidelser.
+
+\subsection{Rapport}
+
+ Beskriv problemstillingen, løsningen og resultater i en velformet rapport med god og korrekt bruk av ligninger, kode, grafer, eksempelbilder, kryssreferanser og referanser.  Rapporten \emph{skal inneholde en lenke} til det forkede repositoriet.
+
+ \subsection{Vurderingskriterier}
+
+Ved vurderingen av prosjektoppgaven vil det bli lagt vekt på
+\begin{itemize}[noitemsep]
+\item hvilke metoder for HDR-rekonstruksjon, HDR-rendring, GUI etc. som er implementert
+\item kvalitet på koden, herunder
+  \begin{itemize}[noitemsep]
+  \item struktur og gjenbruk av kode
+  \item gjenbrukbarhet i form av moduler
+  \item dokumentasjon i form av velformede doc-strings
+  \item variabelnavn
+  \item automatiserte (enhets)tester med tilhørende rapportering (f.eks. med \texttt{coverage})
+  \end{itemize}
+\item kvalitet på rapporten, herunder
+  \begin{itemize}[noitemsep]
+  \item struktur
+  \item språk
+  \item formler
+  \item referanser
+  \item kryssreferanser
+  \item figurer
+  \item tabeller
+  \item kodelistinger
+  \end{itemize}
+\item prosessen (slik den fremkommer av git-historikken)
+\end{itemize}
+
+\subsection{Innlevering}
+
+Rapporten innleveres som PDF i Inspera. Rapporen \emph{skal inneholde en lenke} til det forkede Bitbucket-repositoriet. Repositoriet må minimum få leve til etter at sensuren er gitt, og noe lenger dersom man ønsker å ha muligheten til å klage på karakteren.
+
+\bibliographystyle{unsrt}
+\bibliography{oppgave}
+
+\end{document}
