@@ -3,4 +3,7 @@ pipelines:
   default:
     - step:
         script:
-          - coverage run --source=. -m unittest integrasjon.py && coverage html
+          - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+          - python get-pip.py
+          - pip install coverage
+          - coverage run --source=. -m unittest kode/*.py && coverage html
