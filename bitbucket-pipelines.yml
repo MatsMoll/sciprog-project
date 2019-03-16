@@ -5,5 +5,7 @@ pipelines:
         script:
           - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
           - python get-pip.py
+          - pip install pylint
           - pip install coverage
-          - coverage run --source=. -m unittest *.py && coverage html
+          - pylint *.py
+          - coverage run --source=. -m unittest *.py && coverage report
