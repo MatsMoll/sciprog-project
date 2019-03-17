@@ -1,11 +1,10 @@
-pylint kode/*.py || true # Ignorerer exit code
-values=$(pylint kode/*.py | grep rated | awk '{print $7}')
+pylint kode/*.py --rcfile=lint-config.rc || true # Ignorerer exit code
+values=$(pylint kode/*.py --rcfile=lint-config.rc | grep rated | awk '{print $7}')
 IFS='/'
 score=$(echo $values | awk '{print $1}')
-if (( $(echo "$score > 5" | bc -l) )); then
-    echo "Code rating of $score/10"
+if (( $(echo "$score > 9.5" | bc -l) )); then
     exit 0
 else
-    echo "To low code rating $score/10"
+    echo "To low code rating $score < 9.5"
     exit 1
 fi
