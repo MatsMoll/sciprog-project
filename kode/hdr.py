@@ -1,9 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import imageio
 """
 A module to calculate the HDR-channels in a set of images
 """
+import numpy as np
+import matplotlib.pyplot as plt
+import imageio
+
 
 class ImageSet:
     """
@@ -11,7 +12,9 @@ class ImageSet:
     This makes it easier to handel the images
     """
     def __init__(self, images):
-        self.images = images
+        self.images = []
+        for path, shutter in images:
+            self.images.append(load_image(path, shutter))
 
     def __getitem__(self, item):
         """
@@ -51,6 +54,18 @@ class ImageSet:
         else:
             return hdr_color_channels(pixel_values, shutter_values, smoothness)
 
+    def gray_images(self):
+        """
+        Converts the image set to grey images
+        :return: A new set containing the grey images
+        """
+        new_images = []
+        for image in self.images:
+            new_images.append(image.grey_image())
+        im_set = ImageSet([])
+        im_set.images = new_images
+        return im_set
+
 
 class Image:
     """
@@ -69,6 +84,20 @@ class Image:
             return self.image.transpose().reshape(self.original_shape)
         else:
             return self.image.reshape(self.original_shape)
+
+    def grey_image(self):
+        """
+        Converts one image to a grey image if possible
+        :return: The grey image
+        """
+        if len(self.original_shape) == 3:
+            return Image(
+                self.image.sum(0) / self.original_shape[2],
+                self.shutter,
+                (self.original_shape[0], self.original_shape[1])
+            )
+        else:
+            return self
 
 
 def hdr_channel(images, shutter, smoothness, weighting):
@@ -145,53 +174,28 @@ def hdr_color_channels(channels, shutter, smoothness):
     return result
 
 
-def load_color_image(path, shutter, image_format=".png"):
+def load_image(path, shutter, image_format=".png"):
     """
-    This loads an image
+        This loads an image
 
-    Note: This expects that the name of the image is on the format
-        /path/filename_shutterspeed.format
-    Exp:
-        /eksempelbilder/Balls/Balls_00032.png
+        Note: This expects that the name of the image is on the format
+            /path/filename_shutterspeed.format
+        Exp:
+            /eksempelbilder/Balls/Balls_00032.png
 
-    :param path: The path to the image
-    :param shutter: The shutter speed in a string format
-    :param image_format: The image format
-    :return: a Image object
-    """
+        :param path: The path to the image
+        :param shutter: The shutter speed in a string format
+        :param image_format: The image format
+        :return: a Image object
+        """
     image = imageio.imread(path + shutter + image_format)
     image = image.astype(float)
     shutter_value = float(shutter) * (10 ** -5)
-    color_dims = image.reshape(image.shape[0] * image.shape[1], image.shape[2]).transpose()
-    print("Shutter: ", shutter)
-    print("Color: ", color_dims)
-    return Image(color_dims, shutter_value, np.shape(image))
-
-
-def load_gray_image(path, shutter, image_format=".png"):
-    """
-    This loads an image and converts it to a gray image
-
-    Note: This expects that the name of the image is on the format
-        /path/filename_shutterspeed.format
-    Exp:
-        /eksempelbilder/Balls/Balls_00032.png
-
-    :param path: The path to the image
-    :param shutter: The shutter speed in a string format
-    :param image_format: The image format
-    :return: a tuple containing the image array, the shutter speed and shape
-    """
-    image = load_color_image(path, shutter, image_format)
-    print("Gray: ", image.image.sum(0) / 3)
-    return Image(
-        image.image.sum(0) / 3,
-        image.shutter,
-        (
-            image.original_shape[0],
-            image.original_shape[1]
-        )
-    )
+    if len(image.shape) > 2:
+        color_dims = image.reshape(image.shape[0] * image.shape[1], image.shape[2]).transpose()
+        return Image(color_dims, shutter_value, np.shape(image))
+    else:
+        return Image(image, shutter_value, np.shape(image))
 
 
 def pixel_matrix(images, pixel_index):
@@ -253,22 +257,22 @@ def transform_image_with(hdr_map, image, shutter):
 
 
 color_hrd_map = ImageSet([
-    load_color_image("../eksempelbilder/Balls/Balls_", "00001"),
-    load_color_image("../eksempelbilder/Balls/Balls_", "00004"),
-    load_color_image("../eksempelbilder/Balls/Balls_", "00016"),
-    load_color_image("../eksempelbilder/Balls/Balls_", "00032"),
-    load_color_image("../eksempelbilder/Balls/Balls_", "00256"),
-    # load_color_image("../eksempelbilder/Balls/Balls_", "01024"),
-    # load_color_image("../eksempelbilder/Balls/Balls_", "02048"),
-]).hdr_channels(np.linspace(0, 7000, 700), 10)
+    ("../eksempelbilder/Balls/Balls_", "00001"),
+    ("../eksempelbilder/Balls/Balls_", "00004"),
+    ("../eksempelbilder/Balls/Balls_", "00016"),
+    ("../eksempelbilder/Balls/Balls_", "00032"),
+    ("../eksempelbilder/Balls/Balls_", "00256"),
+    # load_image("../eksempelbilder/Balls/Balls_", "01024"),
+    # load_image("../eksempelbilder/Balls/Balls_", "02048"),
+]).hdr_channels(np.linspace(0, 7000, 700), 1)
 
 image_set = ImageSet([
-    load_gray_image("../eksempelbilder/Balls/Balls_", "00001"),
-    load_gray_image("../eksempelbilder/Balls/Balls_", "00004"),
-    load_gray_image("../eksempelbilder/Balls/Balls_", "00016"),
-    load_gray_image("../eksempelbilder/Balls/Balls_", "00032"),
-    load_gray_image("../eksempelbilder/Balls/Balls_", "00256"),
-])
+    ("../eksempelbilder/Balls/Balls_", "00001"),
+    ("../eksempelbilder/Balls/Balls_", "00004"),
+    ("../eksempelbilder/Balls/Balls_", "00016"),
+    ("../eksempelbilder/Balls/Balls_", "00032"),
+    ("../eksempelbilder/Balls/Balls_", "00256"),
+]).gray_images()
 
 # print(values[-1])
 z_values = np.arange(0, 255)
