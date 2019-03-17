@@ -7,5 +7,5 @@ pipelines:
           - python get-pip.py
           - pip install pylint
           - pip install coverage
-          - pylint *.py
-          - coverage run --source=. -m unittest *.py && coverage report
+          - bash pipelinelint.bash
+          - coverage run --source=. -m unittest discover kode && coverage report
