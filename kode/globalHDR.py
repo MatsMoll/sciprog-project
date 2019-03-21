@@ -8,8 +8,11 @@ import matplotlib.pyplot as plt
 import OpenEXR as exr
 import Imath
 import numpy as np
+import imageio as io
 
-FLOAT = Imath.PixelType(Imath.PixelType.FLOAT)
+#io.plugins.freeimage.download()
+
+#FLOAT = Imath.PixelType(Imath.PixelType.FLOAT)
 
 def ln(u):
     """
@@ -51,14 +54,15 @@ def sqrt(u):
     return np.sqrt(u)
 
 
+"""
 def exr_to_array(path):
-    """
+    ""
     This function reads an (.exr) image and reformats its data to a readable and manipulable format.
     Each channel is appended at a new line in the array.
 
     :param path: The path to the .exr image
     :return: Stack array depth wise with image data
-    """
+    ""
     file = exr.InputFile(path)
     dw = file.header()['dataWindow']
 
@@ -85,31 +89,41 @@ def exr_to_array(path):
     # print(size)
     # print(type(res.reshape(size + (len(channels_tuple),)))) # class 'numpy.ndarray'
     return res.reshape(size + (len(channels_tuple),))
+"""
 
-
-def edit(action):
+def edit(action):#, opt):
     """
     Takes an image (in array-form) and sends it to the given function that manipulates the images values.
 
     :param action: Name of the manipulating function.
     :return: Calls the manipulating function.
     """
-    # switch = {
-    #    0:  "e",
-    #    1:  "ln",
-    #    2:  "squared",
-    #    3:  "sqrt",
-    # }
-    # return switch.get(action, "nothing")
+    #switch = {
+    #   0:  "e",
+    #   1:  "ln",
+    #   2:  "squared",
+    #   3:  "sqrt",
+    #}
+    #return switch.get(opt, "nothing")
     return sqrt(action)
 
 
-pre_edit = exr_to_array("../eksempelbilder/Tree/Tree.exr")
+pre_edit = io.imread("../eksempelbilder/Balls/Balls.exr")
+pre_edit[pre_edit > 1] = 1
+pre_edit[pre_edit <= 0] = 0
 post_edit = edit(pre_edit)
 
-# print("!!!!!\n!!!!!")
-# print(pre_edit) #Verdier på bildet
-# print("!!!!!\n!!!!!")
+
+#plt.imshow(test)
+#plt.show()
+
+
 # print(post_edit) #Verdier på bildet
-plt.imshow(post_edit)
+#plt.imshow(pre_edit.astype(float))
+print(post_edit.shape)
+if (post_edit.ndim <= 2):
+    plt.imshow(post_edit.astype(float), plt.cm.gray)
+else:
+    plt.imshow(post_edit.astype(float))
+
 plt.show()
