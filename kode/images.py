@@ -3,7 +3,7 @@ A Module for loading images for a file
 """
 import imageio
 import numpy as np
-from hdr import hdr_color_channels, hdr_channel
+from hdr import hdr_color_channels, hdr_channel, standard_weighting
 from image_align import find_reference_points_for
 
 
@@ -56,7 +56,7 @@ class ImageSet:
         if len(shape) == 3:
 
             chan = chan.reshape((shape[0], shape[1] * shape[2]))
-            return hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness)
+            return hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness, standard_weighting)
         elif len(shape) == 4:
             chan = chan.reshape((shape[0], shape[1], shape[2] * shape[3]))
             return hdr_color_channels(chan[:, :, pixel_index], self.shutter_speed, smoothness)
@@ -67,7 +67,7 @@ class ImageSet:
         :return: A new set containing the grey images
         """
         if len(np.shape(self.images)) == 4:
-            image_set = ImageSet(self.images.sum(3) / np.shape(self.images)[3], self.original_shape, self.shutter_speed)
+            image_set = ImageSet(self.images.sum(3) / np.shape(self.images)[3])
             image_set.original_shape = self.original_shape
             image_set.shutter_speed = self.shutter_speed
             return image_set

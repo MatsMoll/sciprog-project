@@ -78,7 +78,7 @@ def hdr_color_channels(channels, shutter, smoothness):
 
     for channel in one_dim_channels:
         print("HDR")
-        g, ln_e = hdr_channel(channel, shutter, smoothness)
+        g, ln_e = hdr_channel(channel, shutter, smoothness, standard_weighting)
         print("Done")
         result.append((g, ln_e))
     return result

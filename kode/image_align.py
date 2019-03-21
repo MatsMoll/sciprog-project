@@ -1,3 +1,6 @@
+"""
+A modal used to align images
+"""
 import numpy as np
 
 
