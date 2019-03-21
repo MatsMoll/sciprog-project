@@ -5,11 +5,14 @@ This module rendering the input image with a global function.
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio as io
+import random as rand
 
 
 def edit(picture, func):
     """
     Manipulated the given picture with the given function and returns it directly.
+
+    Note: Gamma-function is supposed to be a fun addition to this function when you get a random value between 0 and 1.
 
     :param picture: Name of the picture that is going to be manipulated.
     :param func: Name of the manipulating function.
@@ -23,6 +26,8 @@ def edit(picture, func):
         return picture ** 2
     elif func == "sqrt":
         return np.sqrt(picture)
+    elif func == "gamma":
+        return picture ** rand.uniform(0.0, 1.0)
     else:
         print("Unavailable function:", func, "\n-> Returned original image.")
         return picture
@@ -60,5 +65,5 @@ def show(image):
 
 
 pic = read_image()
-edited = edit(pic, "sqrt")
+edited = edit(pic, "gamma")
 show(edited)
