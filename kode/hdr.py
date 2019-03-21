@@ -3,100 +3,6 @@ A module to calculate the HDR-channels in a set of images
 """
 import numpy as np
 import matplotlib.pyplot as plt
-import imageio
-
-
-class ImageSet:
-    """
-    A class containing a set of images
-    This makes it easier to handel the images
-    """
-    def __init__(self, images):
-        self.images = []
-        for path, shutter in images:
-            self.images.append(load_image(path, shutter))
-
-    def __getitem__(self, item):
-        """
-        Returns the image at a given index
-        :param item: The item to fetch, of type integer
-        :return: The image at the given index
-        """
-        return self.images[item]
-
-    def hdr_channels(self, pixel_index, smoothness):
-        """
-        Calculates the HDR-channels for the Image set
-
-        :param pixel_index: The pixels to use as references
-        :param smoothness: The amount of smoothing to do on the graph
-        :return: The g lookup table and the ln_e.
-        This will be an tuple if the images are of one dim and an array with tuples if there is more
-        """
-
-        pixel_values, shutter_values = pixel_matrix(self.images, pixel_index)
-
-        if len(np.shape(pixel_values)) == 2:
-
-            z_max = pixel_values.max()
-            z_min = pixel_values.min()
-            z_mid = (z_max + z_min) / 2
-
-            def w(x):
-                if x > z_mid:
-                    return z_max - x
-                else:
-                    return x - z_min
-
-            return hdr_channel(pixel_values, shutter_values, smoothness, w)
-        else:
-            return hdr_color_channels(pixel_values, shutter_values, smoothness)
-
-    def gray_images(self):
-        """
-        Converts the image set to grey images
-        :return: A new set containing the grey images
-        """
-        new_images = []
-        for image in self.images:
-            new_images.append(image.grey_image())
-        im_set = ImageSet([])
-        im_set.images = new_images
-        return im_set
-
-
-class Image:
-    """
-    A class containing the image information
-    """
-    def __init__(self, image, shutter, original_shape):
-        self.image = image
-        self.shutter = shutter
-        self.original_shape = original_shape
-
-    def grey_image(self):
-        """
-        Converts one image to a grey image if possible
-        :return: The grey image
-        """
-        if len(self.original_shape) == 3:
-            return Image(
-                self.image.sum(2) / self.original_shape[2],
-                self.shutter,
-                (self.original_shape[0], self.original_shape[1])
-            )
-        else:
-            return self
-
-    def separate_channels(self):
-        """
-        Separates the different channels
-        :return:
-        """
-        if len(self.image.shape) > 2:
-            return self.image.reshape(self.image.shape[0] * self.image.shape[1], self.image.shape[2]).transpose()
-        else:
-            return self.image.reshape(self.image.shape[0] * self.image.shape[1])
 
 
 def hdr_channel(images, shutter, smoothness, weighting):
@@ -117,10 +23,10 @@ def hdr_channel(images, shutter, smoothness, weighting):
 
     # Setting equations
     pixel = 0
-    for i in range(0, number_of_pixels):
-        for j in range(0, number_of_pic):
+    for j in range(0, number_of_pic):
+        for i in range(0, number_of_pixels):
             pixel_value = images[j][i]
-            weighted_value = weighting(pixel_value)
+            weighted_value = weighting(pixel_value + 1)
             a[pixel][int(round(pixel_value))] = weighted_value
             a[pixel][n + i] = -weighted_value
             b[pixel] = weighted_value * shutter[j]     # B[j] is the shutter speed
@@ -131,14 +37,15 @@ def hdr_channel(images, shutter, smoothness, weighting):
     pixel += 1
 
     # Smoothing out the result
-    for i in range(0, n - 2):
-        a[pixel][i] = smoothness * weighting(i)
-        a[pixel][i + 1] = -2 * smoothness * weighting(i)
-        a[pixel][i + 2] = smoothness * weighting(i)
+    for i in range(0, n - 1):
+        weighted_value = weighting(i + 1)
+        a[pixel][i] = smoothness * weighted_value
+        a[pixel][i + 1] = -2 * smoothness * weighted_value
+        a[pixel][i + 2] = smoothness * weighted_value
         pixel += 1
 
     result = np.linalg.lstsq(a, b, rcond=None)
-    return result[0][0:n], result[0][n:]
+    return result[0][0:n + 1], result[0][n:]
 
 
 def hdr_color_channels(channels, shutter, smoothness):
@@ -151,95 +58,70 @@ def hdr_color_channels(channels, shutter, smoothness):
     :return: A tuple containing log(exposure) for the pixel value Z and log(irradiance) for pixel i
     """
     result = []   # [[g_r(z), ln(E_r)], ..., [g_b(z), ln(E_b)]]
-    for c_i in range(0, len(channels)):
-        z_max = channels[c_i].max()
-        z_min = channels[c_i].min()
-        z_mid = (z_max + z_min) / 2
+    shape = np.shape(channels)
+    one_dim_channels = channels
+    if len(shape) == 4:
+        one_dim_channels = channels.reshape((shape[0], shape[1], shape[2] * shape[3]))
 
-        def w(x):
-            if x > z_mid:
-                return z_max - x
-            else:
-                return x - z_min
+    z_max = 255
+    z_min = 0
+    z_mid = (z_max + z_min) / 2
 
-        g, ln_e = hdr_channel(channels[c_i], shutter, smoothness, w)
+    def w(x):
+        if x > z_mid:
+            return z_max - x
+        else:
+            return x - z_min
 
+    for channel in one_dim_channels:
+        print("HDR")
+        g, ln_e = hdr_channel(channel, shutter, smoothness, w)
+        print("Done")
         result.append((g, ln_e))
     return result
 
 
-def load_image(path, shutter, image_format=".png"):
-    """
-        This loads an image
+def transform_image(channels, weighting, hdr_graph, shutter):
+    print("Transform")
+    shape = np.shape(channels)
+    hdr_image = np.zeros((shape[-2], shape[-1]))
 
-        Note: This expects that the name of the image is on the format
-            /path/filename_shutterspeed.format
-        Exp:
-            /eksempelbilder/Balls/Balls_00032.png
+    for x in range(0, shape[-2]):
+        for y in range(0, shape[-1]):
+            weighted_sum = 0
+            g_value_sum = 0
 
-        :param path: The path to the image
-        :param shutter: The shutter speed in a string format
-        :param image_format: The image format
-        :return: a Image object
-        """
-    image = imageio.imread(path + shutter + image_format)
-    image = image.astype(float)
-    shutter_value = float(shutter) * (10 ** -5)
-    return Image(image, shutter_value, np.shape(image))
+            for j in range(0, shape[0]):
+                weighted_sum += weighting(channels[j][x][y] + 1)
+                z_value = int(channels[j][x][y])
+                g_value_sum += weighted_sum * (hdr_graph[z_value] - shutter[j])
+            hdr_image[x][y] = g_value_sum / weighted_sum
+
+    return hdr_image
 
 
-def pixel_matrix(images, pixel_index):
-    """
-    Creates a Z image matrix and a B shutter vector
-    This will filter out the pixels NOT specified in the pixel_index array
-
-    :param images: The images to convert on the format tuple(image, shutter speed)
-    :param pixel_index: The pixel indexes that should be used in the matrix
-    :return: A tuple in the format (z, b)
-    """
-    image_count = len(images)
-    channels = list(map(lambda im: im.separate_channels(), images))
-    if len(images[0].original_shape) == 3:
-
-        shape = (3, image_count, len(pixel_index))
-        z = np.zeros(shape)
-        b = np.zeros(image_count)
-
-        for i in range(0, image_count):
-            b[i] = np.log(images[i].shutter)
-            for j in range(0, 3):
-                for k in range(0, len(pixel_index)):
-                    z[j][i][k] = channels[i][j][k]
-
-        return z, b
-    else:
-        z = np.zeros((image_count, len(pixel_index)))
-        b = np.zeros(image_count)
-
-        for i in range(0, image_count):
-            b[i] = np.log(images[i].shutter)
-
-            for j in range(0, len(pixel_index)):
-                z[i][j] = channels[i][j]
-
-        return z, b
 
 
 if __name__ == "__main__":
+    from images import ImageSet
     # Testing
 
     # color_image = load_color_image("../eksempelbilder/Balls/Balls_", "00256")
 
-    color_hrd_map = ImageSet([
+    color_images = ImageSet([
         ("../eksempelbilder/Balls/Balls_", "00001"),
         ("../eksempelbilder/Balls/Balls_", "00004"),
         ("../eksempelbilder/Balls/Balls_", "00016"),
         ("../eksempelbilder/Balls/Balls_", "00032"),
         ("../eksempelbilder/Balls/Balls_", "00256"),
+        ("../eksempelbilder/Balls/Balls_", "01024"),
+        ("../eksempelbilder/Balls/Balls_", "02048"),
         # load_image("../eksempelbilder/Balls/Balls_", "01024"),
         # load_image("../eksempelbilder/Balls/Balls_", "02048"),
-    ]).hdr_channels(np.linspace(0, 7000, 700), 1)
-
+    ])
+    color_hrd_map = color_images.hdr(10)
+    #print("HDR Map")
+    
     image_set = ImageSet([
         ("../eksempelbilder/Balls/Balls_", "00001"),
         ("../eksempelbilder/Balls/Balls_", "00004"),
@@ -248,14 +130,33 @@ if __name__ == "__main__":
         ("../eksempelbilder/Balls/Balls_", "00256"),
     ]).gray_images()
 
-    # print(values[-1])
     z_values = np.arange(0, 255)
 
-    g_values, ln_e_values = image_set.hdr_channels(np.linspace(0, 7000, 700), 1)
+    g_values, ln_e_values = image_set.hdr(10)
 
     # print(np.shape(ln_e_values))
     # print(np.shape(g))
     # print(np.asarray(first[0]).reshape(-1))
+
+    def w(x):
+
+        if x > 128:
+            return 255 - x
+        else:
+            return x
+
+    #im = image_set.channels()
+    #print(np.shape(im))
+
+
+    # hdrImage = transform_image(im, w, g_values, image_set.shutter_speed)
+
+    color_channels = color_images.channels()
+
+    color_im = np.zeros(color_images.original_shape)
+    color_im[:, :, 0] = transform_image(color_channels[0], w, color_hrd_map[0][0], color_images.shutter_speed)
+    color_im[:, :, 1] = transform_image(color_channels[1], w, color_hrd_map[1][0], color_images.shutter_speed)
+    color_im[:, :, 2] = transform_image(color_channels[2], w, color_hrd_map[2][0], color_images.shutter_speed)
 
     current_im = 2
 
@@ -271,5 +172,11 @@ if __name__ == "__main__":
     # plt.plot(g_values, z_values)
 
     # plt.plot(color_hrd_map[2][:255], z_values)
+
+    color_im = color_im + abs(color_im.min())
+    print(color_im.max())
+    print(color_im.min())
+    plt.imshow(color_im / 255)
+    # plt.imshow(hdrImage.reshape(image_set.images[0].original_shape), plt.cm.gray)
 
     plt.show()
