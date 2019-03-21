@@ -5,6 +5,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def standard_weighting(x):
+    """
+    A standard weighting function for hdr reconstruction
+    :param x: The x value
+    :return: The weighted value
+    """
+    if x > 128:
+        return 255 - x
+    else:
+        return x - 0
+
+
 def hdr_channel(images, shutter, smoothness, weighting):
     """
     This will create a HDR exposure map based on some observed pixels in some images
@@ -15,6 +27,7 @@ def hdr_channel(images, shutter, smoothness, weighting):
     :param weighting: The weighting function for a given value Z
     :return: A tuple containing log(exposure) for the pixel value Z and log(irradiance) for pixel i
     """
+
     n = 255
     number_of_pic, number_of_pixels = np.shape(images)
 
@@ -63,25 +76,23 @@ def hdr_color_channels(channels, shutter, smoothness):
     if len(shape) == 4:
         one_dim_channels = channels.reshape((shape[0], shape[1], shape[2] * shape[3]))
 
-    z_max = 255
-    z_min = 0
-    z_mid = (z_max + z_min) / 2
-
-    def w(x):
-        if x > z_mid:
-            return z_max - x
-        else:
-            return x - z_min
-
     for channel in one_dim_channels:
         print("HDR")
-        g, ln_e = hdr_channel(channel, shutter, smoothness, w)
+        g, ln_e = hdr_channel(channel, shutter, smoothness)
         print("Done")
         result.append((g, ln_e))
     return result
 
 
-def transform_image(channels, weighting, hdr_graph, shutter):
+def reconstruct_image(channels, weighting, hdr_graph, shutter):
+    """
+    Reconstruct a image from a hdr graph
+    :param channels: The different channels from the different images
+    :param weighting: The weighting function
+    :param hdr_graph: The HDR graph
+    :param shutter: The ln(shutter )speeds for the different images
+    :return: The hdr channel
+    """
     print("Transform")
     shape = np.shape(channels)
     hdr_image = np.zeros((shape[-2], shape[-1]))
@@ -98,8 +109,6 @@ def transform_image(channels, weighting, hdr_graph, shutter):
             hdr_image[x][y] = g_value_sum / weighted_sum
 
     return hdr_image
-
-
 
 
 if __name__ == "__main__":
@@ -138,13 +147,6 @@ if __name__ == "__main__":
     # print(np.shape(g))
     # print(np.asarray(first[0]).reshape(-1))
 
-    def w(x):
-
-        if x > 128:
-            return 255 - x
-        else:
-            return x
-
     #im = image_set.channels()
     #print(np.shape(im))
 
@@ -154,9 +156,13 @@ if __name__ == "__main__":
     color_channels = color_images.channels()
 
     color_im = np.zeros(color_images.original_shape)
-    color_im[:, :, 0] = transform_image(color_channels[0], w, color_hrd_map[0][0], color_images.shutter_speed)
-    color_im[:, :, 1] = transform_image(color_channels[1], w, color_hrd_map[1][0], color_images.shutter_speed)
-    color_im[:, :, 2] = transform_image(color_channels[2], w, color_hrd_map[2][0], color_images.shutter_speed)
+
+    color_im[:, :, 0] = reconstruct_image(  # Red
+        color_channels[0], standard_weighting, color_hrd_map[0][0], color_images.shutter_speed)
+    color_im[:, :, 1] = reconstruct_image(  # Green
+        color_channels[1], standard_weighting, color_hrd_map[1][0], color_images.shutter_speed)
+    color_im[:, :, 2] = reconstruct_image(  # Blue
+        color_channels[2], standard_weighting, color_hrd_map[2][0], color_images.shutter_speed)
 
     current_im = 2
 

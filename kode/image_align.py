@@ -12,13 +12,6 @@ def find_reference_points_for(images):
     spacing = max(int(im_len / 1000), 1)
     return np.arange(0, im_len, spacing)
 
-    #vertical = gray_images[0].image / 255
-    #vertical[1:-1, 1:-1] = ((vertical[1:-1, 2:] - vertical[1:-1, 1:-1]) ** 2 + (vertical[2:, 1:-1] - vertical[1:-1, 1:-1]) ** 2) ** 0.5
-    #vertical[vertical > 0.5] = 1
-    #vertical[vertical <= 0.5] = 0
-    #plt.imshow(vertical, plt.cm.gray)
-    #plt.show()
-
 
 if __name__ == "__main__":
     from images import ImageSet

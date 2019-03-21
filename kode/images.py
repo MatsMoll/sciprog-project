@@ -3,8 +3,8 @@ A Module for loading images for a file
 """
 import imageio
 import numpy as np
-import hdr
-import image_align
+from hdr import hdr_color_channels, hdr_channel
+from image_align import find_reference_points_for
 
 
 class ImageSet:
@@ -12,8 +12,8 @@ class ImageSet:
     A class containing a set of images
     This makes it easier to handel the images
     """
-    def __init__(self, images, original_shape=0, shutter_speed=[]):
-        if type(images) is list:
+    def __init__(self, images):
+        if isinstance(images, list):
             self.images = np.array([])
             self.shutter_speed = []
             for path, shutter in images:
@@ -25,8 +25,6 @@ class ImageSet:
             self.original_shape = np.shape(self.images[0])
         else:
             self.images = images
-            self.original_shape = original_shape
-            self.shutter_speed = shutter_speed
 
     def __getitem__(self, item):
         """
@@ -37,8 +35,12 @@ class ImageSet:
         return self.images[item]
 
     def hdr(self, smoothness):
-        indexes = image_align.find_reference_points_for(self)
-        return self.hdr_channels(indexes, smoothness)
+        """
+        Generates a hdr graph for a image set
+        :param smoothness: The smoothness on the graph
+        :return: The hdr graph
+        """
+        return self.hdr_channels(find_reference_points_for(self), smoothness)
 
     def hdr_channels(self, pixel_index, smoothness):
         """
@@ -53,21 +55,11 @@ class ImageSet:
         shape = np.shape(chan)
         if len(shape) == 3:
 
-            z_max = 255
-            z_min = 0
-            z_mid = (z_max + z_min) / 2
-
-            def w(x):
-                if x > z_mid:
-                    return z_max - x
-                else:
-                    return x - z_min
-
             chan = chan.reshape((shape[0], shape[1] * shape[2]))
-            return hdr.hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness, w)
+            return hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness)
         elif len(shape) == 4:
             chan = chan.reshape((shape[0], shape[1], shape[2] * shape[3]))
-            return hdr.hdr_color_channels(chan[:, :, pixel_index], self.shutter_speed, smoothness)
+            return hdr_color_channels(chan[:, :, pixel_index], self.shutter_speed, smoothness)
 
     def gray_images(self):
         """
@@ -75,11 +67,18 @@ class ImageSet:
         :return: A new set containing the grey images
         """
         if len(np.shape(self.images)) == 4:
-            return ImageSet(self.images.sum(3) / np.shape(self.images)[3], self.original_shape, self.shutter_speed)
+            image_set = ImageSet(self.images.sum(3) / np.shape(self.images)[3], self.original_shape, self.shutter_speed)
+            image_set.original_shape = self.original_shape
+            image_set.shutter_speed = self.shutter_speed
+            return image_set
         else:
             return self
 
     def channels(self):
+        """
+        Separates the different channels in the images
+        :return: The channels
+        """
         shape = np.shape(self.images)
         if len(shape) == 3:
             return self.images
