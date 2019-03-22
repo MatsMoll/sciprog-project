@@ -23,16 +23,9 @@ class ImageSet:
                 else:
                     self.images = np.append(self.images, [load_image(path, shutter)], axis=0)
             self.original_shape = np.shape(self.images[0])
+            self.shutter_speed = np.array(self.shutter_speed)
         else:
             self.images = images
-
-    def __getitem__(self, item):
-        """
-        Returns the image at a given index
-        :param item: The item to fetch, of type integer
-        :return: The image at the given index
-        """
-        return self.images[item]
 
     def hdr(self, smoothness):
         """
@@ -54,7 +47,6 @@ class ImageSet:
         chan = self.channels()
         shape = np.shape(chan)
         if len(shape) == 3:
-
             chan = chan.reshape((shape[0], shape[1] * shape[2]))
             return hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness, standard_weighting)
         elif len(shape) == 4:

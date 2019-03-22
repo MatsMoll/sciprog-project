@@ -14,7 +14,18 @@ def standard_weighting(x):
     if x > 128:
         return 255 - x
     else:
-        return x - 0
+        return x
+
+
+def standard_weighting_vector(x):
+    """
+    A standard weighting function for hdr reconstruction
+    :param x: The x value
+    :return: The weighted value
+    """
+    res = x
+    res[x > 128] = 255 - x[x > 128]
+    return res
 
 
 def hdr_channel(images, shutter, smoothness, weighting):
@@ -39,7 +50,7 @@ def hdr_channel(images, shutter, smoothness, weighting):
     for j in range(0, number_of_pic):
         for i in range(0, number_of_pixels):
             pixel_value = images[j][i]
-            weighted_value = weighting(pixel_value + 1)
+            weighted_value = weighting(pixel_value)
             a[pixel][int(round(pixel_value))] = weighted_value
             a[pixel][n + i] = -weighted_value
             b[pixel] = weighted_value * shutter[j]     # B[j] is the shutter speed
@@ -90,24 +101,15 @@ def reconstruct_image(channels, weighting, hdr_graph, shutter):
     :param channels: The different channels from the different images
     :param weighting: The weighting function
     :param hdr_graph: The HDR graph
-    :param shutter: The ln(shutter )speeds for the different images
+    :param shutter: The ln(shutter) speeds for the different images
     :return: The hdr channel
     """
     print("Transform")
     shape = np.shape(channels)
     hdr_image = np.zeros((shape[-2], shape[-1]))
 
-    for x in range(0, shape[-2]):
-        for y in range(0, shape[-1]):
-            weighted_sum = 0
-            g_value_sum = 0
-
-            for j in range(0, shape[0]):
-                weighted_sum += weighting(channels[j][x][y] + 1)
-                z_value = int(channels[j][x][y])
-                g_value_sum += weighted_sum * (hdr_graph[z_value] - shutter[j])
-            hdr_image[x][y] = g_value_sum / weighted_sum
-
+    w_value = weighting(channels[:, :, :] + 1)
+    hdr_image = (w_value[:] * (hdr_graph[channels[:, :, :].astype(int)] - shutter[:, None, None])).sum(0) / w_value.sum(0)
     return hdr_image
 
 
@@ -122,15 +124,23 @@ if __name__ == "__main__":
         ("../eksempelbilder/Balls/Balls_", "00004"),
         ("../eksempelbilder/Balls/Balls_", "00016"),
         ("../eksempelbilder/Balls/Balls_", "00032"),
+        ("../eksempelbilder/Balls/Balls_", "00064"),
+        ("../eksempelbilder/Balls/Balls_", "00128"),
         ("../eksempelbilder/Balls/Balls_", "00256"),
-        ("../eksempelbilder/Balls/Balls_", "01024"),
-        ("../eksempelbilder/Balls/Balls_", "02048"),
+        ("../eksempelbilder/Balls/Balls_", "00512"),
+        #("../eksempelbilder/Balls/Balls_", "01024"),
+        #("../eksempelbilder/Balls/Balls_", "02048"),
+        #("../eksempelbilder/Balls/Balls_", "04096"),
+        #("../eksempelbilder/Balls/Balls_", "08192"),
+        #("../eksempelbilder/Balls/Balls_", "16384"),
+#        ("../eksempelbilder/Balls/Balls_", "01024"),
+#        ("../eksempelbilder/Balls/Balls_", "02048"),
         # load_image("../eksempelbilder/Balls/Balls_", "01024"),
         # load_image("../eksempelbilder/Balls/Balls_", "02048"),
     ])
     color_hrd_map = color_images.hdr(10)
     #print("HDR Map")
-    
+
     image_set = ImageSet([
         ("../eksempelbilder/Balls/Balls_", "00001"),
         ("../eksempelbilder/Balls/Balls_", "00004"),
@@ -139,7 +149,7 @@ if __name__ == "__main__":
         ("../eksempelbilder/Balls/Balls_", "00256"),
     ]).gray_images()
 
-    z_values = np.arange(0, 255)
+    z_values = np.arange(0, 256)
 
     g_values, ln_e_values = image_set.hdr(10)
 
@@ -158,11 +168,11 @@ if __name__ == "__main__":
     color_im = np.zeros(color_images.original_shape)
 
     color_im[:, :, 0] = reconstruct_image(  # Red
-        color_channels[0], standard_weighting, color_hrd_map[0][0], color_images.shutter_speed)
+        color_channels[0], standard_weighting_vector, color_hrd_map[0][0], color_images.shutter_speed)
     color_im[:, :, 1] = reconstruct_image(  # Green
-        color_channels[1], standard_weighting, color_hrd_map[1][0], color_images.shutter_speed)
+        color_channels[1], standard_weighting_vector, color_hrd_map[1][0], color_images.shutter_speed)
     color_im[:, :, 2] = reconstruct_image(  # Blue
-        color_channels[2], standard_weighting, color_hrd_map[2][0], color_images.shutter_speed)
+        color_channels[2], standard_weighting_vector, color_hrd_map[2][0], color_images.shutter_speed)
 
     current_im = 2
 
@@ -172,17 +182,19 @@ if __name__ == "__main__":
     # plt.imshow(color_image.original_image() / 255)
     # plt.imshow(color_image.original_image() / 255)
 
-    # plt.plot(color_hrd_map[0][0], z_values)
-    # plt.plot(color_hrd_map[1][0], z_values)
-    # plt.plot(color_hrd_map[2][0], z_values)
+    #plt.plot(color_hrd_map[0][0], z_values)
+    #plt.plot(color_hrd_map[1][0], z_values)
+    #plt.plot(color_hrd_map[2][0], z_values)
     # plt.plot(g_values, z_values)
 
     # plt.plot(color_hrd_map[2][:255], z_values)
 
     color_im = color_im + abs(color_im.min())
-    print(color_im.max())
-    print(color_im.min())
-    plt.imshow(color_im / 255)
-    # plt.imshow(hdrImage.reshape(image_set.images[0].original_shape), plt.cm.gray)
+    #print(color_im)
+    print("max", color_im.max())
+    print("min", color_im.min())
+    color_im = (color_im / 255) ** 3
+    plt.imshow(color_im / color_im.max())
+    #plt.imshow(hdrImage.reshape(image_set.images[0].original_shape), plt.cm.gray)
 
     plt.show()
