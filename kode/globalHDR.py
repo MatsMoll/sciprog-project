@@ -163,12 +163,13 @@ show(split)
 NOTE!
 3.2
 
-Skrive en funksjon som regner ut .. på 6 ukjente
+Skrive en funksjon som regner ut en likning på x ukjente
 	- en ukjent for luminansen til hver fargekanal
-	- en ukjent for den globale chrominanse
+	- en ukjent for den globale chromasiteten
 	~ kan det skrives som en matrise? idk, jeg ville brukt løkke, men det er ressurskrevende
+	- når disse verdiene er funnet, kan man justere ned den globale chromasiteten for å endre fargemetningen
 
-Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal) og en global chrominans som ligner på “Balls.exr” sin majoritet mtp farge.
+Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal) og en global chrominasitet som ligner på “Balls.exr” sin majoritet mtp farge.
 
 NOTE 2!
 Gul = rød + blå
