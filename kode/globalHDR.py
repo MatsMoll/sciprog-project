@@ -70,11 +70,11 @@ def show(im):
 def luminance(im):#, chan):
     #if chan == "all":
     lum = im
-    lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
-    lum[:, :, 1] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
-    lum[:, :, 2] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
-    lum[lum > 1] = 1
-    lum[lum <= 0] = 0
+    lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2]) * .6   #.35 #.6     #* .7
+    lum[:, :, 1] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2]) * .25  #.2  #.25    #* .25
+    lum[:, :, 2] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2]) * .05  #.05 #.05    #* .05
+    #lum[lum > 1] = 1
+    #lum[lum <= 0] = 0
     #lume = edit(lum, "sqrt")
     #show(lume)
     #print(lum)
@@ -88,14 +88,14 @@ def luminance(im):#, chan):
     #    print("Unavailable input:", im, chan, "\n-> Please use the format 'im, chan'")
 
     #print(lum)
-    return lum
+    return lum #* 5                                                  #* 5 (3. kolonne ovenfor)
 
 
 def chromasity(im):
     #chrom = np.zeros(im)
     #chrom = np.zeros(im.shape)
     #chrom = im
-    print(luminance(im))
+    #print(luminance(im))
     chrom = im / luminance(im)
     ##chrom[:, :, 0] = (im[:, :, 0] / luminance(im))
     ##chrom[:, :, 1] = (im[:, :, 1] / luminance(im))
@@ -107,43 +107,71 @@ def chromasity(im):
     #print(im.shape)
     #print(im)
     #show(im)
-    return chrom
+    return chrom * 1.95                                             #* 1.95
 
 
 def split_image(im):
     #show(im)
     lum = im
     chrom = im
-    lum = luminance(lum) * .75
+    lum = luminance(lum) #* .75
     chrom = chromasity(chrom)
+    lum = edit(lum, "sqrt")
     #print("lum", lum.shape)
     #print("ch", chrom.shape)
 
-    image = lum * chrom
-    show(image)
+    return lum * chrom
+    #show(image)
 
     #show(im)
     #show(lum)
     #show(chrom)
 
 
+def compare(im, im2):
+    return (print(im2-im))
+
+
 
 
 image = read_image()
-#edited = edit(image, "sqrt")
+edited = edit(image, "sqrt")
 #print(image)
-#show(image)
-#show(edited)
+show(image)
+show(edited)
 #print(edited)                       # hele matrisen
 #print(edited.shape, len(edited))    # (784, 1000, 3) # len(edited) 784
 
 #luminance(image)
 #chromasity(image)
-split_image(image)
+split = split_image(image)
+#print(split)
+#split[split <= 0] = 0
+#split[split > 1] = 1
+show(split)
 
-#r = image[:, :, 0]            # [0] rød
+#compare(edited, split)
+
+#r = image[:, :, 0]             # [0] rød
 # g = image[:, :, 1]            # [1] grønn
 # b = image[:, :, 2]            # [2] blå
 
 
 # show(image[:, :, 1])
+
+"""
+NOTE!
+3.2
+
+Skrive en funksjon som regner ut .. på 6 ukjente
+	- en ukjent for luminansen til hver fargekanal
+	- en ukjent for den globale chrominanse
+	~ kan det skrives som en matrise? idk, jeg ville brukt løkke, men det er ressurskrevende
+
+Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal) og en global chrominans som ligner på “Balls.exr” sin majoritet mtp farge.
+
+NOTE 2!
+Gul = rød + blå
+- Prøv å redusere disse kanalenes luminans og se på sammenligningsfunksjonen
+
+"""
