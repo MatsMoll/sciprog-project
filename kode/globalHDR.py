@@ -12,11 +12,16 @@ Skrive en funksjon som regner ut en likning på x ukjente
 	~ kan det skrives som en matrise? idk, jeg ville brukt løkke, men det er ressurskrevende
 	- når disse verdiene er funnet, kan man justere ned den globale chromasiteten for å endre fargemetningen
 
-Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal) og en global chrominasitet som ligner på “Balls.exr” sin majoritet mtp farge.
+Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal)
+og en global chrominasitet som ligner på “Balls.exr” sin majoritet mtp farge.
 
 NOTE 2!
 Gul = rød + blå
 - Prøv å redusere disse kanalenes luminans og se på sammenligningsfunksjonen
+
+NOTE 3!
+Ser ut til at jeg kan kjøre luminans-funksjonen på en kanal.
+Trolig vil den beste løsningen nå være å synkronisere antall kanaler (dimensjoner) for lum og chrom.
 
 """
 
@@ -98,10 +103,11 @@ def luminance(im):#, chan):
     ##lum = np.sum(im, axis=2)
     ##print(lum.shape)
     #lum[:, :, :] = im#(im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
-    lum[:, :] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
+    #####lum = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
+    #####print("lum", lum.shape)
     ####lum[:, :, 1] = lum[:, :, 0]
     ####lum[:, :, 2] = lum[:, :, 0]
-    ###lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
+    lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
     ###lum[:, :, 1] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])  #.2  #.25    #* .25
     ###lum[:, :, 2] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])  #.05 #.05    #* .05
     #lum[lum > 1] = 1
@@ -134,6 +140,7 @@ def chromasity(im):
     #chrom = np.zeros(im.shape)
     #chrom = im
     #print(luminance(im))
+    print("im i chrom", im.shape)
     chrom = im / luminance(im)
     #chrom[:, :, 0] = (im[:, :, 0] / luminance(im))
     #chrom[:, :, 1] = (im[:, :, 1] / luminance(im))
