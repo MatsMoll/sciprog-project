@@ -1,5 +1,23 @@
 """
-This module rendering the input image with a global function.
+This module is rendering the input image with a global function.
+
+__________
+
+NOTE!
+3.2
+
+Skrive en funksjon som regner ut en likning på x ukjente
+	- en ukjent for luminansen til hver fargekanal
+	- en ukjent for den globale chromasiteten
+	~ kan det skrives som en matrise? idk, jeg ville brukt løkke, men det er ressurskrevende
+	- når disse verdiene er funnet, kan man justere ned den globale chromasiteten for å endre fargemetningen
+
+Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal) og en global chrominasitet som ligner på “Balls.exr” sin majoritet mtp farge.
+
+NOTE 2!
+Gul = rød + blå
+- Prøv å redusere disse kanalenes luminans og se på sammenligningsfunksjonen
+
 """
 
 import matplotlib.pyplot as plt
@@ -68,6 +86,13 @@ def show(im):
 
 
 def luminance(im):#, chan):
+    """
+    Takes an image as an argument and summarizes the different color channels to find the luminance. (L = R + G + B)
+    A weight is given to each channels luminance to achieve a more realistic image.
+
+    :param im: Input image.
+    :return: The luminance of the picture.
+    """
     #if chan == "all":
     lum = im
     lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2]) * .6   #.35 #.6     #* .7
@@ -92,6 +117,13 @@ def luminance(im):#, chan):
 
 
 def chromasity(im):
+    """
+    Takes an input image and calculates the chromasity with the formula C = [R/L, G/L, B/L]
+    A weight is given to the global chromasity to achieve a more realistic image.
+
+    :param im: Input image.
+    :return: The chromasity of the picture.
+    """
     #chrom = np.zeros(im)
     #chrom = np.zeros(im.shape)
     #chrom = im
@@ -111,6 +143,13 @@ def chromasity(im):
 
 
 def split_image(im):
+    """
+    This function splits the input image into chromasity and luminance.
+    It also manipulates the luminance channel alone to reduce saturation.
+
+    :param im: Input image.
+    :return: Output image defined by luminance * chromasity.
+    """
     #show(im)
     lum = im
     chrom = im
@@ -128,10 +167,15 @@ def split_image(im):
     #show(chrom)
 
 
-def compare(im, im2):
-    return (print(im2-im))
+def compare(im1, im2):
+    """
+    Takes two input images and prints out the difference between their pixel values.
 
-
+    :param im: Input image 1
+    :param im2: Input image 2
+    :return: Prints the difference between the images.
+    """
+    return (print(im2-im1))
 
 
 image = read_image()
@@ -158,21 +202,3 @@ show(split)
 
 
 # show(image[:, :, 1])
-
-"""
-NOTE!
-3.2
-
-Skrive en funksjon som regner ut en likning på x ukjente
-	- en ukjent for luminansen til hver fargekanal
-	- en ukjent for den globale chromasiteten
-	~ kan det skrives som en matrise? idk, jeg ville brukt løkke, men det er ressurskrevende
-	- når disse verdiene er funnet, kan man justere ned den globale chromasiteten for å endre fargemetningen
-
-Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal) og en global chrominasitet som ligner på “Balls.exr” sin majoritet mtp farge.
-
-NOTE 2!
-Gul = rød + blå
-- Prøv å redusere disse kanalenes luminans og se på sammenligningsfunksjonen
-
-"""
