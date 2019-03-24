@@ -102,7 +102,10 @@ def luminance(im):#, chan):
     :return: The luminance of the picture.
     """
     #if chan == "all":
-    lum = im
+    shape = (im.shape[0], im.shape[1], 1)
+    lum_channel = np.zeros(shape)
+
+    #lum = im
     ##lum = np.sum(im, axis=2)
     ##print(lum.shape)
     #lum[:, :, :] = im#(im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
@@ -110,7 +113,8 @@ def luminance(im):#, chan):
     #####print("lum", lum.shape)
     ####lum[:, :, 1] = lum[:, :, 0]
     ####lum[:, :, 2] = lum[:, :, 0]
-    lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
+    lum_channel[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
+    print("lum_channel", lum_channel.shape)
     ###lum[:, :, 1] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])  #.2  #.25    #* .25
     ###lum[:, :, 2] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])  #.05 #.05    #* .05
     #lum[lum > 1] = 1
@@ -128,10 +132,10 @@ def luminance(im):#, chan):
     #    print("Unavailable input:", im, chan, "\n-> Please use the format 'im, chan'")
 
     #print(lum)
-    return lum #* 5                                                  #* 5 (3. kolonne ovenfor)
+    return lum_channel#lum #* 5                                                  #* 5 (3. kolonne ovenfor)
 
 
-def chromasity(im):
+def chromasity(im, lum):
     """
     Takes an input image and calculates the chromasity with the formula C = [R/L, G/L, B/L]
     A weight is given to the global chromasity to achieve a more realistic image.
@@ -139,23 +143,50 @@ def chromasity(im):
     :param im: Input image.
     :return: The chromasity of the picture.
     """
-    #chrom = np.zeros(im)
+
+    chrom = im / lum
+
+    #im * lum
+
     #chrom = np.zeros(im.shape)
     #chrom = im
     #print(luminance(im))
-    print("im i chrom", im.shape)
-    chrom = im / luminance(im)
+
+    #-abc_r = luminance(im)
+    #-print("abc_r", abc_r.shape)     #784 1000 1
+    #-chrom = np.zeros(abc_r.shape)
+    #-print("ch", chrom.shape)    #784 1000 1
+
+    #-chrom = abc_r / luminance(im)
+
+    ####
+
+    #-abc_g = luminance(im)
+    #-print("abc_g", abc_g.shape)  # 784 1000 1
+
+    ####
+
+    #-abc_b = luminance(im)
+    #-print("abc_b", abc_b.shape)  # 784 1000 1
+
+    ####
+
+    #-np.append(chrom, [[5, 5, 5], [7, 8, 9]], axis=1)
+
+    ####
+
+    #-print("ch2", chrom.shape)       #784 1000 1
+    #-print("im i chrom", im.shape)   #784*1000*3
+    #-print("im0", im[:, :, 0].shape) #784*1000
+    #--chrom = im
+    #--chrom[:, :, 0] = im[:, :, 0] / luminance(im)
+    #--chrom[:, :, 1] = im[:, :, 1] / luminance(im)
+    #--chrom[:, :, 2] = im[:, :, 2] / luminance(im)
     #chrom[:, :, 0] = (im[:, :, 0] / luminance(im))
     #chrom[:, :, 1] = (im[:, :, 1] / luminance(im))
     #chrom[:, :, 2] = (im[:, :, 2] / luminance(im))
-    #im = luminance(im)
-    #bb = (im[:, :, :] / luminance(im[:, :, :]))
 
-    #print(chrom)
-    #print(im.shape)
-    #print(im)
-    #show(im)
-    return chrom #* 1.95                                             #* 1.95
+    return chrom #im / (lum * 1)  #im #chrom #* 1.95                                             #* 1.95
 
 
 def split_image(im):
@@ -168,14 +199,15 @@ def split_image(im):
     """
     #show(im)
     lum = im
-    chrom = im
-    lum = luminance(lum) #* .75
-    chrom = chromasity(lum)
+    #chrom = im
+    lum = luminance(lum) #* .75         #784*1000*1
     lum = edit(lum, "sqrt")
+    chrom = chromasity(im, lum)           #784*1000*3
     #print("lum", lum.shape)
     #print("ch", chrom.shape)
+    res = lum * chrom
 
-    return lum * chrom
+    return res #chrom#lum * chrom                  # 784*1000*1(?in range 1-3?) * 784*1000*3
     #show(image)
 
     #show(im)
