@@ -95,9 +95,15 @@ def luminance(im):#, chan):
     """
     #if chan == "all":
     lum = im
-    lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2]) * .6   #.35 #.6     #* .7
-    lum[:, :, 1] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2]) * .25  #.2  #.25    #* .25
-    lum[:, :, 2] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2]) * .05  #.05 #.05    #* .05
+    ##lum = np.sum(im, axis=2)
+    ##print(lum.shape)
+    #lum[:, :, :] = im#(im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
+    lum[:, :] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
+    ####lum[:, :, 1] = lum[:, :, 0]
+    ####lum[:, :, 2] = lum[:, :, 0]
+    ###lum[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])   #.35 #.6     #* .7
+    ###lum[:, :, 1] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])  #.2  #.25    #* .25
+    ###lum[:, :, 2] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])  #.05 #.05    #* .05
     #lum[lum > 1] = 1
     #lum[lum <= 0] = 0
     #lume = edit(lum, "sqrt")
@@ -129,9 +135,9 @@ def chromasity(im):
     #chrom = im
     #print(luminance(im))
     chrom = im / luminance(im)
-    ##chrom[:, :, 0] = (im[:, :, 0] / luminance(im))
-    ##chrom[:, :, 1] = (im[:, :, 1] / luminance(im))
-    ##chrom[:, :, 2] = (im[:, :, 2] / luminance(im))
+    #chrom[:, :, 0] = (im[:, :, 0] / luminance(im))
+    #chrom[:, :, 1] = (im[:, :, 1] / luminance(im))
+    #chrom[:, :, 2] = (im[:, :, 2] / luminance(im))
     #im = luminance(im)
     #bb = (im[:, :, :] / luminance(im[:, :, :]))
 
@@ -139,7 +145,7 @@ def chromasity(im):
     #print(im.shape)
     #print(im)
     #show(im)
-    return chrom * 1.95                                             #* 1.95
+    return chrom #* 1.95                                             #* 1.95
 
 
 def split_image(im):
@@ -171,11 +177,11 @@ def compare(im1, im2):
     """
     Takes two input images and prints out the difference between their pixel values.
 
-    :param im: Input image 1
+    :param im1: Input image 1
     :param im2: Input image 2
     :return: Prints the difference between the images.
     """
-    return (print(im2-im1))
+    return print(im2-im1)
 
 
 image = read_image()
@@ -194,7 +200,7 @@ split = split_image(image)
 #split[split > 1] = 1
 show(split)
 
-#compare(edited, split)
+compare(edited, split)
 
 #r = image[:, :, 0]             # [0] rød
 # g = image[:, :, 1]            # [1] grønn
