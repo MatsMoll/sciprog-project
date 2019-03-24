@@ -10,7 +10,8 @@ Skrive en funksjon som regner ut en likning på x ukjente
 	- en ukjent for luminansen til hver fargekanal
 	- en ukjent for den globale chromasiteten
 	~ kan det skrives som en matrise? idk, jeg ville brukt løkke, men det er ressurskrevende
-	- når disse verdiene er funnet, kan man justere ned den globale chromasiteten for å endre fargemetningen
+	- når disse verdiene er funnet, kan man justere ned den globale chromasiteten
+	    for å endre fargemetningen
 
 Per nå har jeg funnet noen kombinasjoner av luminans (per fargekanal)
 og en global chrominasitet som ligner på “Balls.exr” sin majoritet mtp farge.
@@ -21,21 +22,22 @@ Gul = rød + blå
 
 NOTE 3!
 Ser ut til at jeg kan kjøre luminans-funksjonen på en kanal.
-Trolig vil den beste løsningen nå være å synkronisere antall kanaler (dimensjoner) for lum og chrom.
+Trolig vil den beste løsningen være å synkronisere antall kanaler (dimensjoner) for lum og chrom.
 
 """
 
+import random as rand
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio as io
-import random as rand
 
 
 def edit(im, func):
     """
     Manipulated the given image with the given function and returns it directly.
 
-    Note: Gamma-function is supposed to be a fun addition to this function when you get a random value between 0 and 1.
+    Note: Gamma-function is supposed to be a fun addition to this function when you
+        get a random value between 0 and 1.
 
     :param im: Name of the image that is going to be manipulated.
     :param func: Name of the manipulating function.
@@ -92,7 +94,8 @@ def show(im):
 
 def luminance(im):#, chan):
     """
-    Takes an image as an argument and summarizes the different color channels to find the luminance. (L = R + G + B)
+    Takes an image as an argument and summarizes the different color channels
+        to find the luminance. (L = R + G + B)
     A weight is given to each channels luminance to achieve a more realistic image.
 
     :param im: Input image.
@@ -167,7 +170,7 @@ def split_image(im):
     lum = im
     chrom = im
     lum = luminance(lum) #* .75
-    chrom = chromasity(chrom)
+    chrom = chromasity(lum)
     lum = edit(lum, "sqrt")
     #print("lum", lum.shape)
     #print("ch", chrom.shape)
