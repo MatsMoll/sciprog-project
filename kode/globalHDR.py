@@ -30,6 +30,10 @@ def edit(im, func):
         return np.sqrt(im)
     elif func == "gamma":
         return im ** rand.uniform(0.0, 1.0)
+    elif func == "bytwo":
+        return im / 2
+    elif func == "timestwo":
+        return im * 2
     else:
         print("Unavailable function:", func, "\n-> Returned original image.")
         return im
@@ -49,7 +53,7 @@ def read_image(path="../eksempelbilder/Balls/Balls", image_format=".exr"):
     im = io.imread(path + image_format)
 
     im[im > 1] = 1
-    im[im <= 0] = 0
+    im[im <= 0] = 0.1 * (10 ** -10)
     return im
 
 
@@ -57,7 +61,7 @@ def show(im):
     """
     Shows a given image whether it's monochrome or colorful.
 
-    :param image: The image
+    :param im: Input image
     """
     if im.ndim <= 2:
         plt.imshow(im, plt.cm.gray)
@@ -68,27 +72,24 @@ def show(im):
 
 def luminance(im):
     """
-    Takes an image as an argument and summarizes the different color channels
-        to find the luminance. (L = R + G + B)
-    A weight is given to each channels luminance to achieve a more realistic image.
+    Takes an input image and creates a new luminance channel. (L = R + G + B)
 
     :param im: Input image.
-    :return: The luminance of the picture.
+    :return: Luminance channel.
     """
     shape = (im.shape[0], im.shape[1], 1)
     lum_channel = np.zeros(shape)
     lum_channel[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
-
     return lum_channel
 
 
 def chromasity(im, lum):
     """
-    Takes an input image and calculates the chromasity with the formula C = [R/L, G/L, B/L]
-    A weight is given to the global chromasity to achieve a more realistic image.
+    Takes an input image and returns the chromasity with the formula C = [R/L, G/L, B/L]
 
     :param im: Input image.
-    :return: The chromasity of the picture.
+    :param lum: Luminance channel from input image.
+    :return: The chromasity of the image.
     """
     return im / lum
 
@@ -103,11 +104,15 @@ def split_image(im):
     :return: Output image.
     """
     lum = luminance(im)
-    lum = edit(lum, "sqrt")
-    chroma = chromasity(im, lum)
-    result = lum * chroma * 2  # * 1.5-2.5 fungerer rimelig bra. høyere = lysere
+    chroma = chromasity(im, lum)  # Ref. oppg: chrom = [x/L]
+    new_lum = edit(lum, "sqrt")  # Ref. oppg: L -> f(L)
+
+    # new_lum = new_lum ** (4)      # RATIO TO LOWER SATURATION
+    # chroma = chroma * 1.5         # RATIO TO LOWER SATURATION
+
+    result = new_lum * chroma  # * 2  # * 1.5-2.5 fungerer rimelig bra. høyere = lysere
     result[result > 1] = 1
-    result[result <= 0] = 0
+    result[result <= 0] = 0.1 * (10 ** -10)
     return result
 
 
@@ -131,3 +136,5 @@ show(edited)
 
 split = split_image(image)
 show(split)
+
+compare(image, split)
