@@ -3,7 +3,6 @@ This module is rendering the input image with a global function.
 
 """
 
-import random as rand
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio as io
