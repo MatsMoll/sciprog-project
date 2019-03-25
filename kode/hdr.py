@@ -107,10 +107,9 @@ def reconstruct_image(channels, weighting, hdr_graph, shutter):
     :param shutter: The ln(shutter) speeds for the different images
     :return: The hdr channel
     """
-    print("Transform")
     w_value = weighting(channels[:, :, :] + 1)
-    hdr_image = (w_value[:] * (hdr_graph[channels[:, :, :].astype(int)]
-                               - shutter[:, None, None])).sum(0) / w_value.sum(0)
+    hdr_image = (w_value * (hdr_graph[channels[:, :, :].astype(int)]
+                            - shutter[:, None, None])).sum(0) / w_value.sum(0)
     return hdr_image
 
 
@@ -196,7 +195,7 @@ class ImageSet:
             return self.images
         else:
             chan = np.zeros(shape[-1:] + shape[:-1])
-            for i in range(0, chan.ndim):
+            for i in range(0, shape[-1]):
                 chan[i] = self.images[:, :, :, i]
 
             return chan
@@ -232,8 +231,8 @@ if __name__ == "__main__":
         ("../eksempelbilder/Balls/Balls_", "00128"),
         ("../eksempelbilder/Balls/Balls_", "00256"),
         ("../eksempelbilder/Balls/Balls_", "00512"),
-        #("../eksempelbilder/Balls/Balls_", "01024"),
-        #("../eksempelbilder/Balls/Balls_", "02048"),
+        ("../eksempelbilder/Balls/Balls_", "01024"),
+        ("../eksempelbilder/Balls/Balls_", "02048"),
         #("../eksempelbilder/Balls/Balls_", "04096"),
         #("../eksempelbilder/Balls/Balls_", "08192"),
         #("../eksempelbilder/Balls/Balls_", "16384"),
@@ -276,9 +275,9 @@ if __name__ == "__main__":
     # plt.imshow(color_image.original_image() / 255)
     # plt.imshow(color_image.original_image() / 255)
 
-    # plt.plot(color_hrd_map[0][0], z_values)
-    # plt.plot(color_hrd_map[1][0], z_values)
-    # plt.plot(color_hrd_map[2][0], z_values)
+    plt.plot(color_hrd_map[0][0], z_values)
+    plt.plot(color_hrd_map[1][0], z_values)
+    plt.plot(color_hrd_map[2][0], z_values)
     # plt.plot(g_values, z_values)
 
     # plt.plot(color_hrd_map[2][:255], z_values)
@@ -287,9 +286,10 @@ if __name__ == "__main__":
 
     print("max", color_im.max())
     print("min", color_im.min())
-    color_im = (color_im + abs(color_im.min()))
+    color_im = np.exp(color_im) ** 0.25
+    color_im = color_im + abs(color_im.min())
     print(color_im.min(), color_im.max())
-    plt.imshow(color_im / (color_im.max()))
+    plt.imshow(color_im / color_im.max())
     # plt.imshow(hdrImage.reshape(image_set.images[0].original_shape), plt.cm.gray)
 
     plt.show()
