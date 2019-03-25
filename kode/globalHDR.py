@@ -149,10 +149,11 @@ def compare(im1, im2):
 if __name__ == '__main__':
     image = read_image()
     show(image)
-    print(image.ndim, image.shape)
 
-    edited = global_edit(image, "pow", 0.5)
+    edited = global_edit(image, "pow", 2)
+    edited[edited > 1] = 1
+    edited[edited <= 0] = 0
     show(edited)
 
-    split = split_image(image, "pow", 0.5)
+    split = split_image(image, "pow", 2)
     show(split)
