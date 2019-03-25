@@ -105,12 +105,13 @@ def split_image(im):
     """
     lum = luminance(im)
     chroma = chromasity(im, lum)  # Ref. oppg: chrom = [x/L]
+    # print("avg:", np.average(lum), np.average(chroma))
     new_lum = edit(lum, "sqrt")  # Ref. oppg: L -> f(L)
 
-    # new_lum = new_lum ** (4)      # RATIO TO LOWER SATURATION
-    # chroma = chroma * 1.5         # RATIO TO LOWER SATURATION
+    new_lum = new_lum * 1  # * 1 # ** 2 (denne gir mening pga sqrt av lum alene)   # * 50      # RATIO TO LOWER SATURATION
+    chroma = chroma ** .6  # ** .6  # * 1     # * .0167         # RATIO TO LOWER SATURATION
 
-    result = new_lum * chroma  # * 2  # * 1.5-2.5 fungerer rimelig bra. høyere = lysere
+    result = new_lum * chroma # * 2  # * 1.5-2.5 fungerer rimelig bra. høyere = lysere
     result[result > 1] = 1
     result[result <= 0] = 0.1 * (10 ** -10)
     return result
@@ -137,4 +138,4 @@ show(edited)
 split = split_image(image)
 show(split)
 
-compare(image, split)
+#compare(edited, split)
