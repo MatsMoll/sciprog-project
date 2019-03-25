@@ -9,7 +9,7 @@ import numpy as np
 import imageio as io
 
 
-def edit(im, func):
+def edit(im, func="sqrt"):
     """
     Manipulated the given image with the given function and returns it directly.
 
@@ -30,10 +30,6 @@ def edit(im, func):
         return np.sqrt(im)
     elif func == "gamma":
         return im ** rand.uniform(0.0, 1.0)
-    elif func == "bytwo":
-        return im / 2
-    elif func == "timestwo":
-        return im * 2
     else:
         print("Unavailable function:", func, "\n-> Returned original image.")
         return im
@@ -74,12 +70,20 @@ def luminance(im):
     """
     Takes an input image and creates a new luminance channel. (L = R + G + B)
 
+    Note!
+    Monochrome images: ...
+    Colorful images: ...
+
     :param im: Input image.
     :return: Luminance channel.
     """
-    shape = (im.shape[0], im.shape[1], 1)
-    lum_channel = np.zeros(shape)
-    lum_channel[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
+    if im.ndim == 3:
+        shape = (im.shape[0], im.shape[1], 1)
+        lum_channel = np.zeros(shape)
+        lum_channel[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
+    else:
+        #lum_channel = np.zeros(im.shape)
+        lum_channel = im
     return lum_channel
 
 
@@ -94,24 +98,29 @@ def chromasity(im, lum):
     return im / lum
 
 
+def weight_ratio():  # edit="sqrt, lum, chroma) # Lag en funk som returnerer vekten mellom lum chrom basert på edit funksjonen.
+    return 0
+
+
 def split_image(im):
     """
     This function splits the input image into chromasity and luminance.
     Editing happens on the luminance channel alone to reduce saturation.
-    Output image is defined by luminance * chromasity and multiplied to give a better end result.
+    Output image is defined by luminance * chromasity in a ratio to give a better end result.
 
     :param im: Input image.
     :return: Output image.
     """
     lum = luminance(im)
     chroma = chromasity(im, lum)  # Ref. oppg: chrom = [x/L]
-    # print("avg:", np.average(lum), np.average(chroma))
-    new_lum = edit(lum, "sqrt")  # Ref. oppg: L -> f(L)
+    #print("avg: (l) (c)", np.average(lum), np.average(chroma))
+    #print("max: (l) (c)", lum.max(), chroma.max())
+    lum = edit(lum, "sqrt")  # Ref. oppg: L -> f(L)
 
-    new_lum = new_lum * 1  # * 1 # ** 2 (denne gir mening pga sqrt av lum alene)   # * 50      # RATIO TO LOWER SATURATION
+    lum = lum * 1  # * 1 # ** 2 (denne gir mening pga sqrt av lum alene)   # * 50      # RATIO TO LOWER SATURATION
     chroma = chroma ** .6  # ** .6  # * 1     # * .0167         # RATIO TO LOWER SATURATION
 
-    result = new_lum * chroma # * 2  # * 1.5-2.5 fungerer rimelig bra. høyere = lysere
+    result = lum * chroma  # * 2  # * 1.5-2.5 fungerer rimelig bra. høyere = lysere
     result[result > 1] = 1
     result[result <= 0] = 0.1 * (10 ** -10)
     return result
@@ -131,6 +140,7 @@ def compare(im1, im2):
 
 image = read_image()
 show(image)
+print(image.ndim, image.shape)
 
 edited = edit(image, "sqrt")
 show(edited)
@@ -138,4 +148,4 @@ show(edited)
 split = split_image(image)
 show(split)
 
-#compare(edited, split)
+compare(edited, split)
