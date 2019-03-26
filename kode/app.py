@@ -5,13 +5,13 @@ import sys
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QSizePolicy, \
-    QPushButton, QInputDialog, QSlider, QGroupBox, QWidget, QLabel, QFileDialog
+    QPushButton, QInputDialog, QSlider, QGroupBox, QWidget, QLabel, QFileDialog, QScrollArea
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from hdr import ImageSet
-from globalHDR import split_image
+from globalHDR import edit_luminance
 
 
 class App(QWidget):
@@ -34,6 +34,7 @@ class App(QWidget):
         self.hdr_image = None
         self.filter_widgets = list()
         self.filter_layout = QVBoxLayout()
+        self.add_filter_button = QPushButton("+ Legg til filter", self)
         self.init_ui()
 
     def init_ui(self):
@@ -48,24 +49,30 @@ class App(QWidget):
         open_image_button = QPushButton("Lag HDR", self)
         open_image_button.clicked.connect(self.select_file)
 
-        add_filter_button = QPushButton("+ Legg til filter", self)
-        add_filter_button.clicked.connect(self.add_filter)
-
-        self.add_filter()
+        self.add_filter_button.clicked.connect(self.add_filter)
+        self.add_filter_button.setEnabled(False)
+        #self.add_filter_button.setMinimumWidth(400)
 
         button_layout = QVBoxLayout()
         button_layout.addWidget(open_image_button)
-        button_layout.addWidget(add_filter_button)
+        button_layout.addWidget(self.add_filter_button)
         button_layout.addLayout(self.filter_layout)
         button_layout.addStretch()
-        button_layout.setAlignment(Qt.AlignLeading)
+        button_layout.setAlignment(Qt.AlignCenter)
 
         group_box.setLayout(button_layout)
 
+        scroll = QScrollArea()
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(group_box)
+        scroll.setMaximumWidth(400)
+
         main_layout = QHBoxLayout()
         main_layout.setAlignment(Qt.AlignLeading)
-        main_layout.addWidget(group_box)
         main_layout.addWidget(self.main_image)
+        main_layout.addWidget(scroll)
 
         self.setLayout(main_layout)
         self.setWindowTitle(self.title)
@@ -96,6 +103,7 @@ class App(QWidget):
         filter_widget.deleteLater()
         self.filter_layout.removeWidget(filter_widget)
         self.filter_widgets.remove(filter_widget)
+        self.update_image_with_filter()
 
     def update_image_with_filter(self):
         """
@@ -113,16 +121,20 @@ class App(QWidget):
         for filter_widget in self.filter_widgets:
             filter_name = filter_widget.filter_options[filter_widget.selected_filter_index]
             if filter_name != "ingen":
-                effect_value = filter_widget.slider_value()
-                self.edited_image = split_image(self.edited_image.copy(), filter_name, effect_value)
+                effect_value = filter_widget.effect_value()
+                lum_value = filter_widget.luminance_value()
+                chrom_value = filter_widget.chromasity_value()
+                print("max", self.edited_image.max())
+                print("min", self.edited_image.min())
+                self.edited_image = edit_luminance(self.edited_image, effect_value, lum_value, chrom_value, filter_name)
 
         print("max", self.edited_image.max())
         print("min", self.edited_image.min())
 
-        self.edited_image = self.edited_image - self.edited_image.min()
+        self.edited_image = self.edited_image / (self.edited_image.max() - self.edited_image.min())
         #self.edited_image[self.edited_image > 1] = 1
         #self.edited_image[self.edited_image < 0] = 0
-        self.main_image.plot_image(self.edited_image / self.edited_image.max())
+        self.main_image.plot_image(self.edited_image)
 
     def select_file(self):
         """
@@ -133,70 +145,57 @@ class App(QWidget):
 
         if ok:
             # Filename and shutter
+            self.add_filter_button.setEnabled(True)
             image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
             self.original_image_set = ImageSet(image_info)
             self.hdr_image = self.original_image_set.hdr_image(10)
             self.update_image_with_filter()
 
 
-class FilterWidget(QWidget):
+class SliderWidget(QWidget):
     """
     A Widget that presents a filter setting
     """
 
-    def __init__(self, value_did_change_function, remove_filter_function, parent=None):
-        super(FilterWidget, self).__init__(parent)
-        self.selected_filter_index = 0
-        self.filter_options = ["ingen", "e", "ln", "pow", "sqrt", "gamma"]
-        self.selected_filter_label = QLabel("Valgt effekt: Ingen")
+    def __init__(self, value_did_change_function, title=None, parent=None):
+        super(SliderWidget, self).__init__(parent)
         self.effect_slider = QSlider(Qt.Horizontal)
         self.effect_value_label = QLabel("1")
-        self.effect_label = QLabel("Effekt: Ingen")
         self.value_did_change_function = value_did_change_function
-        self.remove_filter_function = remove_filter_function
+        self.title = title
         self.init_ui()
 
     def init_ui(self):
-        """
-        Creates the UI for the widget
-        """
 
-        self.setup_slider()
+        vertical = QVBoxLayout()
+        vertical.setSpacing(8)
+        vertical.setContentsMargins(12, 0, 0, 0)
 
-        effect_layout = QVBoxLayout(self)
+        if self.title is not None:
+            label = QLabel(self.title)
+            vertical.addWidget(label)
 
         slider_box = QHBoxLayout()
-        filter_box = QHBoxLayout()
-
-        edit_button = QPushButton("Rediger Filter", self)
-        edit_button.clicked.connect(self.present_filter_options)
-
-        remove_button = QPushButton("Slett", self)
-        remove_button.clicked.connect(self.remove_was_clicked)
-
-        filter_box.addWidget(self.effect_label)
-        filter_box.addWidget(edit_button)
-        filter_box.addWidget(remove_button)
-
         dec_button = QPushButton("-")
         dec_button.clicked.connect(self.decrease_effect)
 
         inc_button = QPushButton("+")
         inc_button.clicked.connect(self.increase_effect)
 
-        self.effect_value_label = QLabel("0.01")
+        self.effect_value_label = QLabel("1")
         self.effect_value_label.setMaximumWidth(30)
         self.effect_value_label.setMinimumWidth(30)
 
+        self.setup_slider()
+
+        slider_box.addWidget(self.effect_value_label)
         slider_box.addWidget(dec_button)
         slider_box.addWidget(inc_button)
-        slider_box.addWidget(self.effect_value_label)
         slider_box.addWidget(self.effect_slider)
 
-        effect_layout.addLayout(filter_box)
-        effect_layout.addLayout(slider_box)
+        vertical.addLayout(slider_box)
 
-        self.setLayout(effect_layout)
+        self.setLayout(vertical)
         self.show()
 
     def setup_slider(self):
@@ -206,7 +205,7 @@ class FilterWidget(QWidget):
         self.effect_slider = QSlider(Qt.Horizontal)
         self.effect_slider.setMaximum(400)
         self.effect_slider.setMinimum(0)
-        self.effect_slider.setValue(1)
+        self.effect_slider.setValue(100)
         self.effect_slider.valueChanged.connect(self.slider_did_change)
 
     def decrease_effect(self):
@@ -223,20 +222,78 @@ class FilterWidget(QWidget):
         if self.effect_slider.isEnabled():
             self.effect_slider.setValue(self.effect_slider.value() + 1)
 
+    def value(self):
+        return self.effect_slider.value() / 100
+
     def slider_did_change(self):
         """
         A function that is called when the slider change value
         """
-        effect_value = round(self.effect_slider.value()) / 100
+        effect_value = self.value()
         self.effect_value_label.setText(str(effect_value))
         self.value_did_change_function()
 
-    def slider_value(self):
+
+class FilterWidget(QWidget):
+    """
+    A Widget that presents a filter setting
+    """
+
+    def __init__(self, value_did_change_function, remove_filter_function, parent=None):
+        super(FilterWidget, self).__init__(parent)
+        self.selected_filter_index = 0
+        self.filter_options = ["ingen", "e", "ln", "pow", "sqrt", "gamma"]
+        self.selected_filter_label = QLabel("Valgt effekt: Ingen")
+        self.effect_slider = QSlider(Qt.Horizontal)
+        self.effect_value_label = QLabel("1")
+        self.effect_label = QLabel("Effekt: Ingen")
+        self.remove_filter_function = remove_filter_function
+        self.value_did_change_function = value_did_change_function
+        self.effect_slider = SliderWidget(value_did_change_function, "Effekt styrke")
+        self.luminance_slider = SliderWidget(value_did_change_function, "Luminance")
+        self.chromasity_slider = SliderWidget(value_did_change_function, "Chromasity")
+        self.init_ui()
+
+    def init_ui(self):
+        """
+        Creates the UI for the widget
+        """
+
+        effect_layout = QVBoxLayout(self)
+
+        filter_box = QHBoxLayout()
+
+        edit_button = QPushButton("Rediger Filter", self)
+        edit_button.clicked.connect(self.present_filter_options)
+
+        remove_button = QPushButton("Slett", self)
+        remove_button.clicked.connect(self.remove_was_clicked)
+
+        filter_box.addWidget(self.effect_label)
+        filter_box.addWidget(edit_button)
+        filter_box.addWidget(remove_button)
+
+        effect_layout.addLayout(filter_box)
+        effect_layout.addWidget(self.effect_slider)
+        effect_layout.addWidget(self.luminance_slider)
+        effect_layout.addWidget(self.chromasity_slider)
+        effect_layout.setSpacing(4)
+
+        self.setLayout(effect_layout)
+        self.show()
+
+    def effect_value(self):
         """
         Calculates the slider value
         :return: The value of the slider
         """
-        return round(self.effect_slider.value()) / 100
+        return self.effect_slider.value()
+
+    def luminance_value(self):
+        return self.luminance_slider.value()
+
+    def chromasity_value(self):
+        return self.chromasity_slider.value()
 
     def present_filter_options(self):
         """
@@ -311,6 +368,7 @@ class PlotCanvas(FigureCanvas):
 
 
 if __name__ == '__main__':
+    print((-0.00000001) ** .65)
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())

@@ -29,7 +29,7 @@ def standard_weighting_vector(x):
     return res
 
 
-def hdr_channel(images, shutter, smoothness, weighting, z_mid=128):
+def hdr_channel(images, shutter, smoothness, weighting, z_mid=255):
     """
     This will create a HDR exposure map based on some observed pixels in some images
 
@@ -222,7 +222,9 @@ def load_image(path):
     :param path: The path to the image
     :return: a Image object
     """
-    return imageio.imread(path)
+    image = imageio.imread(path)
+    image[image == 0] = 1
+    return image
 
 
 if __name__ == "__main__":
