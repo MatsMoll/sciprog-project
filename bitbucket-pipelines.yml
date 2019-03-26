@@ -9,5 +9,3 @@ pipelines:
           - pip install coverage
           - pip install -r requirements.txt
           - bash pipelinelint.bash
-          - cd kode
-          - coverage run --source=. -m unittest && coverage report
