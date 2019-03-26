@@ -1,0 +1,6 @@
+pip numpy
+pip matplotlib
+pip PyQt5
+pip imageio
+pip OpenEXR
+

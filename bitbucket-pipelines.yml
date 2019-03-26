@@ -7,6 +7,7 @@ pipelines:
           - python get-pip.py
           - pip install pylint
           - pip install coverage
+          - pip install -r requirements.txt
           - bash pipelinelint.bash
           - cd kode
           - coverage run --source=. -m unittest && coverage report
