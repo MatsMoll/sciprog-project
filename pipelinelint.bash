@@ -9,8 +9,8 @@ if [ "$score" -lt "950" ]; then
     exit 1
 fi
 
-coverage run --source=. -m unittest && coverage report | grep TOTAL | awk '{print $3}'
-pros=$(coverage run --source=. -m unittest && coverage report | grep TOTAL | awk '{print $3}')
+coverage run --source=. -m unittest && coverage report
+pros=$(coverage report | grep TOTAL | awk '{print $3}')
 pros=${pros::-1}
 if [ "$pros" -lt "70" ]; then
     echo "To low coverage $pros < 70"
