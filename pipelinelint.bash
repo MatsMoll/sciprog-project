@@ -1,5 +1,5 @@
-pylint *.py --rcfile=lint-config.rc || true # Ignorerer exit code
-values=$(pylint *.py --rcfile=lint-config.rc | grep rated | awk '{print $7}')
+pylint kode/*.py --rcfile=lint-config.rc || true # Ignorerer exit code
+values=$(pylint kode/*.py --rcfile=lint-config.rc | grep rated | awk '{print $7}')
 IFS='/'
 score=$(echo $values | awk '{print $1}')
 echo $score
