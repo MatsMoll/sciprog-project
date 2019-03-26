@@ -57,6 +57,8 @@ def show(im):
 
     :param im: Input image
     """
+    im[im > 1] = 1
+    im[im <= 0] = 0.1 * (10 ** -10)
     if im.ndim <= 2:
         plt.imshow(im, plt.cm.gray)
     else:
@@ -117,8 +119,6 @@ def weighted_image(lum, chroma, effect, lum_scale, chrom_scale, func="sqrt"):
     chroma = chroma * chrom_scale
 
     result = lum * chroma
-    result[result > 1] = 1
-    result[result <= 0] = 0.1 * (10 ** -10)
     return result
 
 
@@ -155,10 +155,10 @@ if __name__ == '__main__':
     print(image.dtype, image)
     show(image)
 
-    edited = edit_globally(image, 2, "pow")
+    edited = edit_globally(image, 2, "sqrt")
     edited[edited > 1] = 1
     edited[edited <= 0] = 0
     show(edited)
 
-    split = edit_luminance(image, 2, 1, 1, "pow")
+    split = edit_luminance(image, 2, 1, 1, "sqrt")
     show(split)
