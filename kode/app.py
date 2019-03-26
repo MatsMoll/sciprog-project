@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QSizePolicy,
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
 from hdr import ImageSet
 from globalHDR import edit_luminance
@@ -156,6 +157,9 @@ class SliderWidget(QWidget):
         self.init_ui()
 
     def init_ui(self):
+        """
+        Inits the widget ui
+        """
 
         vertical = QVBoxLayout()
         vertical.setSpacing(8)
@@ -213,6 +217,9 @@ class SliderWidget(QWidget):
             self.effect_slider.setValue(self.effect_slider.value() + 1)
 
     def value(self):
+        """
+        :return: The value of the slider
+        """
         return self.effect_slider.value() / 100
 
     def slider_did_change(self):
@@ -280,9 +287,15 @@ class FilterWidget(QWidget):
         return self.effect_slider.value()
 
     def luminance_value(self):
+        """
+        :return: The luminance value
+        """
         return self.luminance_slider.value()
 
     def chromasity_value(self):
+        """
+        :return: The chromasity value
+        """
         return self.chromasity_slider.value()
 
     def present_filter_options(self):
@@ -339,9 +352,9 @@ class PlotCanvas(FigureCanvas):
         :param y_axis: The y-axis to display
         :param title: The title to display
         """
-        plt = self.figure.add_subplot(111)
-        plt.plot(x_axis, y_axis)
-        plt.set_title(title)
+        fig = self.figure.add_subplot(111)
+        fig.plot(x_axis, y_axis)
+        fig.set_title(title)
         self.draw()
 
     def plot_image(self, image, title=""):
@@ -350,10 +363,13 @@ class PlotCanvas(FigureCanvas):
         :param image: The image to display
         :param title: The title to display
         """
-        plt = self.figure.add_subplot(111)
-        plt.axis("off")
-        plt.imshow(image)
-        plt.set_title(title)
+        fig = self.figure.add_subplot(111)
+        fig.axis("off")
+        if image.ndim == 2:
+            fig.imshow(image, plt.cm.gray)
+        else:
+            fig.imshow(image)
+        fig.set_title(title)
         self.draw()
 
 
