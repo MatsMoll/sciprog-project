@@ -34,6 +34,7 @@ class App(QWidget):
         self.hdr_image = None
         self.filter_widgets = list()
         self.filter_layout = QVBoxLayout()
+        self.add_filter_button = QPushButton("+ Legg til filter", self)
         self.init_ui()
 
     def init_ui(self):
@@ -48,17 +49,16 @@ class App(QWidget):
         open_image_button = QPushButton("Lag HDR", self)
         open_image_button.clicked.connect(self.select_file)
 
-        add_filter_button = QPushButton("+ Legg til filter", self)
-        add_filter_button.clicked.connect(self.add_filter)
-
-        self.add_filter()
+        self.add_filter_button.clicked.connect(self.add_filter)
+        self.add_filter_button.setEnabled(False)
+        #self.add_filter_button.setMinimumWidth(400)
 
         button_layout = QVBoxLayout()
         button_layout.addWidget(open_image_button)
-        button_layout.addWidget(add_filter_button)
+        button_layout.addWidget(self.add_filter_button)
         button_layout.addLayout(self.filter_layout)
         button_layout.addStretch()
-        button_layout.setAlignment(Qt.AlignLeading)
+        button_layout.setAlignment(Qt.AlignCenter)
 
         group_box.setLayout(button_layout)
 
@@ -67,11 +67,12 @@ class App(QWidget):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setWidgetResizable(True)
         scroll.setWidget(group_box)
+        scroll.setMaximumWidth(400)
 
         main_layout = QHBoxLayout()
         main_layout.setAlignment(Qt.AlignLeading)
-        main_layout.addWidget(scroll)
         main_layout.addWidget(self.main_image)
+        main_layout.addWidget(scroll)
 
         self.setLayout(main_layout)
         self.setWindowTitle(self.title)
@@ -144,6 +145,7 @@ class App(QWidget):
 
         if ok:
             # Filename and shutter
+            self.add_filter_button.setEnabled(True)
             image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
             self.original_image_set = ImageSet(image_info)
             self.hdr_image = self.original_image_set.hdr_image(10)
@@ -166,6 +168,8 @@ class SliderWidget(QWidget):
     def init_ui(self):
 
         vertical = QVBoxLayout()
+        vertical.setSpacing(8)
+        vertical.setContentsMargins(12, 0, 0, 0)
 
         if self.title is not None:
             label = QLabel(self.title)
@@ -184,9 +188,9 @@ class SliderWidget(QWidget):
 
         self.setup_slider()
 
+        slider_box.addWidget(self.effect_value_label)
         slider_box.addWidget(dec_button)
         slider_box.addWidget(inc_button)
-        slider_box.addWidget(self.effect_value_label)
         slider_box.addWidget(self.effect_slider)
 
         vertical.addLayout(slider_box)
@@ -273,6 +277,7 @@ class FilterWidget(QWidget):
         effect_layout.addWidget(self.effect_slider)
         effect_layout.addWidget(self.luminance_slider)
         effect_layout.addWidget(self.chromasity_slider)
+        effect_layout.setSpacing(4)
 
         self.setLayout(effect_layout)
         self.show()
