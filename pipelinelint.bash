@@ -11,7 +11,7 @@ fi
 
 cd kode
 coverage run --source=. -m unittest && coverage report
-pros=$(coverage run --source=. -m unittest && coverage report | grep TOTAL | awk '{print $3}')
+pros=$(coverage run --source=. -m unittest && coverage report | grep TOTAL | awk '{print $4}')
 pros=${pros%\%}
 echo $pros
 if [ "$pros" -lt "70" ]; then
