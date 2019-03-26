@@ -129,7 +129,7 @@ class App(QWidget):
         Selects a set of files and generates a HDR image
         :return:
         """
-        file_name, ok = QFileDialog.getOpenFileNames(self, "Velg bilde", "","PNG (*.png)")
+        file_name, ok = QFileDialog.getOpenFileNames(self, "Velg bilde", "", "PNG (*.png)")
 
         if ok:
             # Filename and shutter
@@ -251,7 +251,7 @@ class FilterWidget(QWidget):
             self.selected_filter_label.setText("Valgt effekt: " + filter_name)
             self.selected_filter_index = new_index
 
-            if filter_name == "pow" or filter_name == "gamma":
+            if filter_name in ("pow", "gamma"):
                 self.effect_slider.setEnabled(True)
             else:
                 self.effect_slider.setEnabled(False)
