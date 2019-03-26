@@ -9,9 +9,10 @@ if [ "$score" -lt "950" ]; then
     exit 1
 fi
 
+cd kode
 coverage run --source=. -m unittest && coverage report
 pros=$(coverage report | grep TOTAL | awk '{print $3}')
-pros=${pros::-1}
+pros=${pros%\%}
 if [ "$pros" -lt "70" ]; then
     echo "To low coverage $pros < 70"
     exit 1
