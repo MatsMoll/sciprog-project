@@ -8,7 +8,7 @@ import numpy as np
 import imageio as io
 
 
-def global_edit(im, effect=0.5, func="sqrt"):
+def edit_globally(im, effect=0.5, func="sqrt"):
     """
     Manipulated the input image with the given function (and effect) and returns it directly.
 
@@ -95,7 +95,7 @@ def chromasity(im, lum):
     return im / lum
 
 
-def weighted_image(lum, chroma, effect, func="sqrt"):
+def weighted_image(lum, chroma, effect, lum_scale, chrom_scale, func="sqrt"):
     """
     This function is responsible for editing, weighting and putting the image back together.
 
@@ -106,13 +106,15 @@ def weighted_image(lum, chroma, effect, func="sqrt"):
     :param lum: The luminance.
     :param chroma: The chromasity.
     :param effect: Scale of the function.
+    :param lum_scale: Weighted ratio for lum * chrom.
+    :param chrom_scale: Weighted ratio for lum * chrom.
     :param func: Function for editing the luminance channel.
     :return: The edited picture.
     """
-    lum = global_edit(lum, effect, func)
+    lum = edit_globally(lum, effect, func)
 
-    lum = lum * 1           # *1 (sqrt)
-    chroma = chroma ** .65     # **.6 (sqrt)
+    lum = lum * lum_scale
+    chroma = chroma * chrom_scale
 
     result = lum * chroma
     result[result > 1] = 1
@@ -120,18 +122,20 @@ def weighted_image(lum, chroma, effect, func="sqrt"):
     return result
 
 
-def split_image(im, effect=0.5, func="sqrt"):
+def edit_luminance(im, effect=0.5, lum_scale=1, chrom_scale=1, func="sqrt"):
     """
     This function splits the input image into chromasity and luminance.
 
     :param im: Input image.
-    :param func: Function for editing the luminance channel.
     :param effect: Scale of the function.
+    :param lum_scale: Weighted ratio for lum * chrom.
+    :param chrom_scale: Weighted ratio for lum * chrom.
+    :param func: Function for editing the luminance channel.
     :return: Output image.
     """
     lum = luminance(im)
     chroma = chromasity(im, lum)
-    return weighted_image(lum, chroma, effect, func)
+    return weighted_image(lum, chroma, effect, lum_scale, chrom_scale, func)
 
 
 def compare(im1, im2):
@@ -151,10 +155,10 @@ if __name__ == '__main__':
     print(image.dtype, image)
     show(image)
 
-    edited = global_edit(image, 2, "pow")
+    edited = edit_globally(image, 2, "pow")
     edited[edited > 1] = 1
     edited[edited <= 0] = 0
     show(edited)
 
-    split = split_image(image, 2, "pow")
+    split = edit_luminance(image, 2, 1, 1, "pow")
     show(split)
