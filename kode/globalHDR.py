@@ -8,7 +8,7 @@ import numpy as np
 import imageio as io
 
 
-def global_edit(im, func="sqrt", effect=0.5):
+def global_edit(im, effect=0.5, func="sqrt"):
     """
     Manipulated the input image with the given function (and effect) and returns it directly.
 
@@ -148,12 +148,13 @@ def compare(im1, im2):
 
 if __name__ == '__main__':
     image = read_image()
+    print(image.dtype, image)
     show(image)
 
-    edited = global_edit(image, "pow", 2)
+    edited = global_edit(image, 2, "pow")
     edited[edited > 1] = 1
     edited[edited <= 0] = 0
     show(edited)
 
-    split = split_image(image, "pow", 2)
+    split = split_image(image, 2, "pow")
     show(split)
