@@ -3,11 +3,10 @@ pipelines:
   default:
     - step:
         script:
-          - apt-get update
-          - apt-get install bc
           - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
           - python get-pip.py
           - pip install pylint
           - pip install coverage
+          - cd kode
           - bash pipelinelint.bash
-          - coverage run --source=. -m unittest discover kode && coverage report
+          - coverage run --source=. -m unittest && coverage report

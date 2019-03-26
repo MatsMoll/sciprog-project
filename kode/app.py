@@ -12,7 +12,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from hdr import ImageSet
-from globalHDR import edit_luminance
+from globalHDR import edit_luminance, edit_globally
 
 
 class App(QWidget):
@@ -120,7 +120,8 @@ class App(QWidget):
                 effect_value = filter_widget.effect_value()
                 lum_value = filter_widget.luminance_value()
                 chrom_value = filter_widget.chromasity_value()
-                self.edited_image = edit_luminance(self.edited_image, effect_value, lum_value, chrom_value, filter_name)
+                self.edited_image = edit_globally(self.edited_image, effect=effect_value, func=filter_name)
+                #self.edited_image = edit_luminance(self.edited_image, effect_value, lum_value, chrom_value, filter_name)
 
         self.edited_image = self.edited_image / (self.edited_image.max() - self.edited_image.min())
         #self.edited_image[self.edited_image > 1] = 1
@@ -200,6 +201,7 @@ class SliderWidget(QWidget):
         self.effect_slider.setMaximum(400)
         self.effect_slider.setMinimum(0)
         self.effect_slider.setValue(100)
+        self.effect_slider.setMinimum(1)
         self.effect_slider.valueChanged.connect(self.slider_did_change)
 
     def decrease_effect(self):
