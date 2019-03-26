@@ -96,6 +96,7 @@ class App(QWidget):
         filter_widget.deleteLater()
         self.filter_layout.removeWidget(filter_widget)
         self.filter_widgets.remove(filter_widget)
+        self.update_image_with_filter()
 
     def update_image_with_filter(self):
         """
@@ -114,7 +115,9 @@ class App(QWidget):
             filter_name = filter_widget.filter_options[filter_widget.selected_filter_index]
             if filter_name != "ingen":
                 effect_value = filter_widget.slider_value()
-                self.edited_image = split_image(self.edited_image.copy(), filter_name, effect_value)
+                print("max", self.edited_image.max())
+                print("min", self.edited_image.min())
+                self.edited_image = split_image(self.edited_image, effect_value, filter_name)
 
         print("max", self.edited_image.max())
         print("min", self.edited_image.min())
@@ -311,6 +314,7 @@ class PlotCanvas(FigureCanvas):
 
 
 if __name__ == '__main__':
+    print((-0.00000001) ** .65)
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
