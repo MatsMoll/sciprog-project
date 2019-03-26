@@ -111,12 +111,7 @@ class App(QWidget):
         """
         self.edited_image = self.original_image_set.images[0].copy() / 255
         if self.hdr_image is not None:
-            print("max HDR", self.hdr_image.max())
-            print("min HDR", self.hdr_image.min())
             self.edited_image = self.hdr_image.copy()
-
-        print("max", self.edited_image.max())
-        print("min", self.edited_image.min())
 
         for filter_widget in self.filter_widgets:
             filter_name = filter_widget.filter_options[filter_widget.selected_filter_index]
@@ -124,17 +119,12 @@ class App(QWidget):
                 effect_value = filter_widget.effect_value()
                 lum_value = filter_widget.luminance_value()
                 chrom_value = filter_widget.chromasity_value()
-                print("max", self.edited_image.max())
-                print("min", self.edited_image.min())
                 self.edited_image = edit_luminance(self.edited_image, effect_value, lum_value, chrom_value, filter_name)
-
-        print("max", self.edited_image.max())
-        print("min", self.edited_image.min())
 
         self.edited_image = self.edited_image / (self.edited_image.max() - self.edited_image.min())
         #self.edited_image[self.edited_image > 1] = 1
         #self.edited_image[self.edited_image < 0] = 0
-        self.main_image.plot_image(self.edited_image)
+        self.main_image.plot_image(self.edited_image - self.edited_image.min())
 
     def select_file(self):
         """
