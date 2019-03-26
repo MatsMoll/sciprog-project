@@ -138,19 +138,33 @@ class ImageSet:
             for path, shutter in images:
                 self.shutter_speed.append(np.log(float(shutter) * 10 ** (-5)))
                 if self.images.size == 0:
-                    self.images = np.array([load_image(path, shutter)])
+                    self.images = np.array([load_image(path)])
                 else:
-                    self.images = np.append(self.images, [load_image(path, shutter)], axis=0)
+                    self.images = np.append(self.images, [load_image(path)], axis=0)
             self.original_shape = np.shape(self.images[0])
             self.shutter_speed = np.array(self.shutter_speed)
         else:
             self.images = images
 
-    def hdr(self, smoothness):
+    def hdr_image(self, smoothness):
         """
-        Generates a hdr graph for a image set
-        :param smoothness: The smoothness on the graph
-        :return: The hdr graph
+        Generates a hdr image
+        :param smoothness: The smoothness on the curve
+        :return: The hdr image
+        """
+        curve = self.hdr_curve(smoothness)
+        image = np.zeros(self.original_shape)
+        channels = self.channels()
+        for i in range(0, channels.ndim - 1):
+            image[:, :, i] = reconstruct_image(  # Red
+                channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
+        return image
+
+    def hdr_curve(self, smoothness):
+        """
+        Generates a hdr curve for a image set
+        :param smoothness: The smoothness on the curve
+        :return: The hdr curve
         """
         return self.hdr_channels(find_reference_points_for(self), smoothness)
 
@@ -201,21 +215,14 @@ class ImageSet:
             return chan
 
 
-def load_image(path, shutter, image_format=".png"):
+def load_image(path):
     """
     This loads an image
 
-    Note: This expects that the name of the image is on the format
-        /path/filename_shutterspeed.format
-    Exp:
-        /eksempelbilder/Balls/Balls_00032.png
-
     :param path: The path to the image
-    :param shutter: The shutter speed in a string format
-    :param image_format: The image format
     :return: a Image object
     """
-    return imageio.imread(path + shutter + image_format)
+    return imageio.imread(path)
 
 
 if __name__ == "__main__":
@@ -223,23 +230,23 @@ if __name__ == "__main__":
     # color_image = load_color_image("../eksempelbilder/Balls/Balls_", "00256")
 
     color_images = ImageSet([
-        ("../eksempelbilder/Balls/Balls_", "00001"),
-        ("../eksempelbilder/Balls/Balls_", "00004"),
-        ("../eksempelbilder/Balls/Balls_", "00016"),
-        ("../eksempelbilder/Balls/Balls_", "00032"),
-        ("../eksempelbilder/Balls/Balls_", "00064"),
-        ("../eksempelbilder/Balls/Balls_", "00128"),
-        ("../eksempelbilder/Balls/Balls_", "00256"),
-        ("../eksempelbilder/Balls/Balls_", "00512"),
-        ("../eksempelbilder/Balls/Balls_", "01024"),
-        ("../eksempelbilder/Balls/Balls_", "02048"),
+        ("../eksempelbilder/Balls/Balls_00001.png", "00001"),
+        ("../eksempelbilder/Balls/Balls_00004.png", "00004"),
+        ("../eksempelbilder/Balls/Balls_00016.png", "00016"),
+        ("../eksempelbilder/Balls/Balls_00032.png", "00032"),
+        ("../eksempelbilder/Balls/Balls_00064.png", "00064"),
+        ("../eksempelbilder/Balls/Balls_00128.png", "00128"),
+        ("../eksempelbilder/Balls/Balls_00256.png", "00256"),
+        ("../eksempelbilder/Balls/Balls_00512.png", "00512"),
+        ("../eksempelbilder/Balls/Balls_01024.png", "01024"),
+        ("../eksempelbilder/Balls/Balls_02048.png", "02048"),
         #("../eksempelbilder/Balls/Balls_", "04096"),
         #("../eksempelbilder/Balls/Balls_", "08192"),
         #("../eksempelbilder/Balls/Balls_", "16384"),
         # load_image("../eksempelbilder/Balls/Balls_", "01024"),
         # load_image("../eksempelbilder/Balls/Balls_", "02048"),
     ])
-    color_hrd_map = color_images.hdr(10)
+    #color_hrd_map = color_images.hdr_curve(10)
 
     z_values = np.arange(0, 256)
 
@@ -253,20 +260,21 @@ if __name__ == "__main__":
 
     # hdrImage = transform_image(im, w, g_values, image_set.shutter_speed)
 
-    color_channels = color_images.channels()
+    #color_channels = color_images.channels()
 
     #gray_im = reconstruct_image(
     #    image_set.channels(), standard_weighting_vector, g_values, image_set.shutter_speed)
 
-    color_im = np.zeros(color_images.original_shape)
+    #color_im = np.zeros(color_images.original_shape)
 
-    color_im[:, :, 0] = reconstruct_image(  # Red
-        color_channels[0], standard_weighting_vector, color_hrd_map[0][0], color_images.shutter_speed)
-    color_im[:, :, 1] = reconstruct_image(  # Green
-        color_channels[1], standard_weighting_vector, color_hrd_map[1][0], color_images.shutter_speed)
-    color_im[:, :, 2] = reconstruct_image(  # Blue
-        color_channels[2], standard_weighting_vector, color_hrd_map[2][0], color_images.shutter_speed)
+    #color_im[:, :, 0] = reconstruct_image(  # Red
+    #    color_channels[0], standard_weighting_vector, color_hrd_map[0][0], color_images.shutter_speed)
+    #color_im[:, :, 1] = reconstruct_image(  # Green
+    #    color_channels[1], standard_weighting_vector, color_hrd_map[1][0], color_images.shutter_speed)
+    #color_im[:, :, 2] = reconstruct_image(  # Blue
+    #    color_channels[2], standard_weighting_vector, color_hrd_map[2][0], color_images.shutter_speed)
 
+    color_im = color_images.hdr_image(10)
     current_im = 2
 
     # im = image_set[current_im].original_image()
@@ -275,9 +283,9 @@ if __name__ == "__main__":
     # plt.imshow(color_image.original_image() / 255)
     # plt.imshow(color_image.original_image() / 255)
 
-    plt.plot(color_hrd_map[0][0], z_values)
-    plt.plot(color_hrd_map[1][0], z_values)
-    plt.plot(color_hrd_map[2][0], z_values)
+    #plt.plot(color_hrd_map[0][0], z_values)
+    #plt.plot(color_hrd_map[1][0], z_values)
+    #plt.plot(color_hrd_map[2][0], z_values)
     # plt.plot(g_values, z_values)
 
     # plt.plot(color_hrd_map[2][:255], z_values)

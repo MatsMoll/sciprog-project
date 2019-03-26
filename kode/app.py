@@ -4,15 +4,14 @@ A module that presents a GUI
 import sys
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QHBoxLayout, QSizePolicy, QMessageBox, \
-    QPushButton, QInputDialog, QSlider, QGroupBox, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QSizePolicy, \
+    QPushButton, QInputDialog, QSlider, QGroupBox, QWidget, QLabel, QFileDialog
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from hdr import ImageSet
-#import numpy as np
-from globalHDR import split_image, read_image
+from globalHDR import split_image
 
 
 class App(QWidget):
@@ -29,14 +28,12 @@ class App(QWidget):
         self.height = 600
         self.main_image = PlotCanvas(width=5, height=4)
         self.original_image_set = ImageSet(
-            [("../eksempelbilder/Balls/Balls_", "01024")]
+            [("../eksempelbilder/Balls/Balls_01024.png", "01024")]
         )
         self.edited_image = None
-        self.selected_filter_index = 0
-        self.filter_options = ["ingen", "e", "ln", "pow", "sqrt", "gamma"]
-        self.selected_filter_label = QLabel("Valgt effekt: Ingen")
-        self.effect_slider = QSlider(Qt.Horizontal)
-        self.effect_label = QLabel("1")
+        self.hdr_image = None
+        self.filter_widgets = list()
+        self.filter_layout = QVBoxLayout()
         self.init_ui()
 
     def init_ui(self):
@@ -44,40 +41,23 @@ class App(QWidget):
         Setup all the ui in the widget
         """
         self.setup_image()
-        self.setup_slider()
+        self.filter_layout = QVBoxLayout()
 
         group_box = QGroupBox("Instillinger")
 
-        edit_button = QPushButton("Rediger Filter", self)
-        edit_button.clicked.connect(self.present_filter_options)
+        open_image_button = QPushButton("Lag HDR", self)
+        open_image_button.clicked.connect(self.select_file)
 
-        effect_group = QVBoxLayout()
-        effect_label = QLabel("Effekt")
-        slider_box = QHBoxLayout()
+        add_filter_button = QPushButton("+ Legg til filter", self)
+        add_filter_button.clicked.connect(self.add_filter)
 
-        dec_button = QPushButton("-")
-        dec_button.clicked.connect(self.decrease_effect)
-
-        inc_button = QPushButton("+")
-        inc_button.clicked.connect(self.increase_effect)
-
-        self.effect_label = QLabel("0.01")
-        self.effect_label.setMaximumWidth(30)
-        self.effect_label.setMinimumWidth(30)
-
-        slider_box.addWidget(dec_button)
-        slider_box.addWidget(inc_button)
-        slider_box.addWidget(self.effect_label)
-        slider_box.addWidget(self.effect_slider)
-
-        effect_group.addWidget(effect_label)
-        effect_group.addLayout(slider_box)
+        self.add_filter()
 
         button_layout = QVBoxLayout()
-        button_layout.addWidget(self.selected_filter_label)
-        button_layout.addWidget(edit_button)
+        button_layout.addWidget(open_image_button)
+        button_layout.addWidget(add_filter_button)
+        button_layout.addLayout(self.filter_layout)
         button_layout.addStretch()
-        button_layout.addLayout(effect_group)
         button_layout.setAlignment(Qt.AlignLeading)
 
         group_box.setLayout(button_layout)
@@ -100,6 +80,125 @@ class App(QWidget):
         self.main_image = PlotCanvas(width=5, height=4)
         self.main_image.plot_image(self.original_image_set.images[0])
 
+    def add_filter(self):
+        """
+        Adds a filter to the layout
+        """
+        new_filter = FilterWidget(self.update_image_with_filter, self.remove_filter)
+        self.filter_widgets.append(new_filter)
+        self.filter_layout.addWidget(new_filter)
+
+    def remove_filter(self, filter_widget):
+        """
+        Removes a filter widget
+        :param filter_widget: The filter widget to remove
+        """
+        filter_widget.deleteLater()
+        self.filter_layout.removeWidget(filter_widget)
+        self.filter_widgets.remove(filter_widget)
+
+    def update_image_with_filter(self):
+        """
+        Updates the image with the selected filter and effects
+        """
+        self.edited_image = self.original_image_set.images[0].copy() / 255
+        if self.hdr_image is not None:
+            print("max HDR", self.hdr_image.max())
+            print("min HDR", self.hdr_image.min())
+            self.edited_image = self.hdr_image.copy()
+
+        print("max", self.edited_image.max())
+        print("min", self.edited_image.min())
+
+        for filter_widget in self.filter_widgets:
+            filter_name = filter_widget.filter_options[filter_widget.selected_filter_index]
+            if filter_name != "ingen":
+                effect_value = filter_widget.slider_value()
+                self.edited_image = split_image(self.edited_image.copy(), filter_name, effect_value)
+
+        print("max", self.edited_image.max())
+        print("min", self.edited_image.min())
+
+        self.edited_image = self.edited_image - self.edited_image.min()
+        #self.edited_image[self.edited_image > 1] = 1
+        #self.edited_image[self.edited_image < 0] = 0
+        self.main_image.plot_image(self.edited_image / self.edited_image.max())
+
+    def select_file(self):
+        """
+        Selects a set of files and generates a HDR image
+        :return:
+        """
+        file_name, ok = QFileDialog.getOpenFileNames(self, "Velg bilde", "","PNG (*.png)")
+
+        if ok:
+            # Filename and shutter
+            image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
+            self.original_image_set = ImageSet(image_info)
+            self.hdr_image = self.original_image_set.hdr_image(10)
+            self.update_image_with_filter()
+
+
+class FilterWidget(QWidget):
+    """
+    A Widget that presents a filter setting
+    """
+
+    def __init__(self, value_did_change_function, remove_filter_function, parent=None):
+        super(FilterWidget, self).__init__(parent)
+        self.selected_filter_index = 0
+        self.filter_options = ["ingen", "e", "ln", "pow", "sqrt", "gamma"]
+        self.selected_filter_label = QLabel("Valgt effekt: Ingen")
+        self.effect_slider = QSlider(Qt.Horizontal)
+        self.effect_value_label = QLabel("1")
+        self.effect_label = QLabel("Effekt: Ingen")
+        self.value_did_change_function = value_did_change_function
+        self.remove_filter_function = remove_filter_function
+        self.init_ui()
+
+    def init_ui(self):
+        """
+        Creates the UI for the widget
+        """
+
+        self.setup_slider()
+
+        effect_layout = QVBoxLayout(self)
+
+        slider_box = QHBoxLayout()
+        filter_box = QHBoxLayout()
+
+        edit_button = QPushButton("Rediger Filter", self)
+        edit_button.clicked.connect(self.present_filter_options)
+
+        remove_button = QPushButton("Slett", self)
+        remove_button.clicked.connect(self.remove_was_clicked)
+
+        filter_box.addWidget(self.effect_label)
+        filter_box.addWidget(edit_button)
+        filter_box.addWidget(remove_button)
+
+        dec_button = QPushButton("-")
+        dec_button.clicked.connect(self.decrease_effect)
+
+        inc_button = QPushButton("+")
+        inc_button.clicked.connect(self.increase_effect)
+
+        self.effect_value_label = QLabel("0.01")
+        self.effect_value_label.setMaximumWidth(30)
+        self.effect_value_label.setMinimumWidth(30)
+
+        slider_box.addWidget(dec_button)
+        slider_box.addWidget(inc_button)
+        slider_box.addWidget(self.effect_value_label)
+        slider_box.addWidget(self.effect_slider)
+
+        effect_layout.addLayout(filter_box)
+        effect_layout.addLayout(slider_box)
+
+        self.setLayout(effect_layout)
+        self.show()
+
     def setup_slider(self):
         """
         Setup the slider GUI
@@ -108,7 +207,7 @@ class App(QWidget):
         self.effect_slider.setMaximum(400)
         self.effect_slider.setMinimum(0)
         self.effect_slider.setValue(1)
-        self.effect_slider.valueChanged.connect(self.update_image_with_filter)
+        self.effect_slider.valueChanged.connect(self.slider_did_change)
 
     def decrease_effect(self):
         """
@@ -124,16 +223,31 @@ class App(QWidget):
         if self.effect_slider.isEnabled():
             self.effect_slider.setValue(self.effect_slider.value() + 1)
 
+    def slider_did_change(self):
+        """
+        A function that is called when the slider change value
+        """
+        effect_value = round(self.effect_slider.value()) / 100
+        self.effect_value_label.setText(str(effect_value))
+        self.value_did_change_function()
+
+    def slider_value(self):
+        """
+        Calculates the slider value
+        :return: The value of the slider
+        """
+        return round(self.effect_slider.value()) / 100
+
     def present_filter_options(self):
         """
         Presents the different filter options
         """
         filter_name, confirmed = QInputDialog.getItem(self, "Velg Filter", "Filter: ", self.filter_options,\
                                                       self.selected_filter_index, False)
-
         new_index = self.filter_options.index(filter_name)
 
         if confirmed and self.selected_filter_index != new_index:
+            self.effect_label.setText("Effekt: " + filter_name)
             self.selected_filter_label.setText("Valgt effekt: " + filter_name)
             self.selected_filter_index = new_index
 
@@ -142,24 +256,13 @@ class App(QWidget):
             else:
                 self.effect_slider.setEnabled(False)
 
-            self.update_image_with_filter()
+            self.value_did_change_function()
 
-    def update_image_with_filter(self):
+    def remove_was_clicked(self):
         """
-        Updates the image with the selected filter and effects
+        A function that will be called when the remove button is clicked
         """
-        filter_name = self.filter_options[self.selected_filter_index]
-        self.edited_image = self.original_image_set.images[0] / 255
-
-        effect_value = self.effect_slider.value() / 10
-        self.effect_label.setText(str(round(effect_value * 10) / 100))
-
-        if filter_name != "ingen":
-            self.edited_image = split_image(self.edited_image, filter_name, effect_value)
-
-        self.edited_image[self.edited_image > 1] = 1
-        self.edited_image[self.edited_image < 0] = 0
-        self.main_image.plot_image(self.edited_image)
+        self.remove_filter_function(self)
 
 
 class PlotCanvas(FigureCanvas):
@@ -172,6 +275,8 @@ class PlotCanvas(FigureCanvas):
         self.axes = fig.add_subplot(111)
 
         FigureCanvas.__init__(self, fig)
+        fig.patch.set_facecolor("none")
+        self.setStyleSheet("background-color:rgba(0, 0, 0, 0)")
         self.setParent(parent)
 
         FigureCanvas.setSizePolicy(
