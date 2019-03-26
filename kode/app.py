@@ -376,7 +376,6 @@ class PlotCanvas(FigureCanvas):
 
 
 if __name__ == '__main__':
-    print((-0.00000001) ** .65)
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
