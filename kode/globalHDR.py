@@ -152,12 +152,9 @@ def compare(im1, im2):
 
 if __name__ == '__main__':
     image = read_image()
-    print(image.dtype, image)
     show(image)
 
     edited = edit_globally(image, 2, "sqrt")
-    edited[edited > 1] = 1
-    edited[edited <= 0] = 0
     show(edited)
 
     split = edit_luminance(image, 2, 1, 1, "sqrt")
