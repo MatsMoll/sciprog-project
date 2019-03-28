@@ -5,7 +5,7 @@ This is the unit test file for functions within the globalHDR.py file.
 
 import unittest as test
 import numpy as np
-from kode import globalHDR
+import globalHDR
 
 
 class GlobalHDRTest(test.TestCase):
@@ -15,6 +15,9 @@ class GlobalHDRTest(test.TestCase):
     Note! A lower and upper boundary is set with a expected image.
     """
     def test_edit_globally(self):
+        """
+        Test the global rendering with the sqrt-function.
+        """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
         ])
@@ -29,6 +32,9 @@ class GlobalHDRTest(test.TestCase):
         np.allclose(output, expected_image_upper)
 
     def test_edit_luminance(self):
+        """
+        Test the luminance channel with a luminance-chromasity ratio and the default sqrt-function.
+        """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
         ])
