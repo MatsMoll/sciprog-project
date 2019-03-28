@@ -26,10 +26,11 @@ def standard_weighting_vector(x):
     """
     res = x
     res[x > 128] = 255 - x[x > 128]
+    res[x <= 0] = 1
     return res
 
 
-def hdr_channel(images, shutter, smoothness, weighting, z_mid=255):
+def hdr_channel(images, shutter, smoothness, weighting, z_mid=128):
     """
     This will create a HDR exposure map based on some observed pixels in some images
 
@@ -91,7 +92,7 @@ def hdr_color_channels(channels, shutter, smoothness):
 
     for channel in one_dim_channels:
         print("HDR")
-        z_mean = 256 - channel.mean()
+        z_mean = 256 - channels.mean()
         g, ln_e = hdr_channel(channel, shutter, smoothness, standard_weighting, z_mid=z_mean)
         print("Done")
         result.append((g, ln_e))
@@ -108,9 +109,8 @@ def reconstruct_image(channels, weighting, hdr_graph, shutter):
     :return: The hdr channel
     """
     w_value = weighting(channels[:, :, :] + 1)
-    hdr_image = (w_value * (hdr_graph[channels[:, :, :].astype(int)]
-                            - shutter[:, None, None])).sum(0) / w_value.sum(0)
-    return hdr_image
+    return (w_value * (hdr_graph[channels[:, :, :].astype(int) - 1]
+                       - shutter[:, None, None])).sum(0) / w_value.sum(0)
 
 
 def find_reference_points_for(images):
@@ -155,9 +155,13 @@ class ImageSet:
         curve = self.hdr_curve(smoothness)
         image = np.zeros(self.original_shape)
         channels = self.channels()
-        for i in range(0, channels.ndim - 1):
-            image[:, :, i] = reconstruct_image(  # Red
-                channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
+        if channels.ndim == 3:
+            image = reconstruct_image(
+                channels, standard_weighting_vector, curve[0], self.shutter_speed)
+        else:
+            for i in range(0, channels.ndim - 1):
+                image[:, :, i] = reconstruct_image(
+                    channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
         return image
 
     def hdr_curve(self, smoothness):
@@ -222,8 +226,8 @@ def load_image(path):
     :param path: The path to the image
     :return: a Image object
     """
-    image = imageio.imread(path)
-    image[image == 0] = 1
+    image = np.array(imageio.imread(path))
+    image[image <= 0] = 1
     return image
 
 

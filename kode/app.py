@@ -9,9 +9,10 @@ from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QSizePolicy,
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
 from hdr import ImageSet
-from globalHDR import edit_luminance
+from globalHDR import edit_luminance, edit_globally
 
 
 class App(QWidget):
@@ -111,12 +112,7 @@ class App(QWidget):
         """
         self.edited_image = self.original_image_set.images[0].copy() / 255
         if self.hdr_image is not None:
-            print("max HDR", self.hdr_image.max())
-            print("min HDR", self.hdr_image.min())
             self.edited_image = self.hdr_image.copy()
-
-        print("max", self.edited_image.max())
-        print("min", self.edited_image.min())
 
         for filter_widget in self.filter_widgets:
             filter_name = filter_widget.filter_options[filter_widget.selected_filter_index]
@@ -124,17 +120,13 @@ class App(QWidget):
                 effect_value = filter_widget.effect_value()
                 lum_value = filter_widget.luminance_value()
                 chrom_value = filter_widget.chromasity_value()
-                print("max", self.edited_image.max())
-                print("min", self.edited_image.min())
-                self.edited_image = edit_luminance(self.edited_image, effect_value, lum_value, chrom_value, filter_name)
-
-        print("max", self.edited_image.max())
-        print("min", self.edited_image.min())
+                self.edited_image = edit_globally(self.edited_image, effect=effect_value, func=filter_name)
+                #self.edited_image = edit_luminance(self.edited_image, effect_value, lum_value, chrom_value, filter_name)
 
         self.edited_image = self.edited_image / (self.edited_image.max() - self.edited_image.min())
         #self.edited_image[self.edited_image > 1] = 1
         #self.edited_image[self.edited_image < 0] = 0
-        self.main_image.plot_image(self.edited_image)
+        self.main_image.plot_image(self.edited_image - self.edited_image.min())
 
     def select_file(self):
         """
@@ -166,6 +158,9 @@ class SliderWidget(QWidget):
         self.init_ui()
 
     def init_ui(self):
+        """
+        Inits the widget ui
+        """
 
         vertical = QVBoxLayout()
         vertical.setSpacing(8)
@@ -206,6 +201,7 @@ class SliderWidget(QWidget):
         self.effect_slider.setMaximum(400)
         self.effect_slider.setMinimum(0)
         self.effect_slider.setValue(100)
+        self.effect_slider.setMinimum(1)
         self.effect_slider.valueChanged.connect(self.slider_did_change)
 
     def decrease_effect(self):
@@ -223,6 +219,9 @@ class SliderWidget(QWidget):
             self.effect_slider.setValue(self.effect_slider.value() + 1)
 
     def value(self):
+        """
+        :return: The value of the slider
+        """
         return self.effect_slider.value() / 100
 
     def slider_did_change(self):
@@ -290,9 +289,15 @@ class FilterWidget(QWidget):
         return self.effect_slider.value()
 
     def luminance_value(self):
+        """
+        :return: The luminance value
+        """
         return self.luminance_slider.value()
 
     def chromasity_value(self):
+        """
+        :return: The chromasity value
+        """
         return self.chromasity_slider.value()
 
     def present_filter_options(self):
@@ -349,9 +354,9 @@ class PlotCanvas(FigureCanvas):
         :param y_axis: The y-axis to display
         :param title: The title to display
         """
-        plt = self.figure.add_subplot(111)
-        plt.plot(x_axis, y_axis)
-        plt.set_title(title)
+        fig = self.figure.add_subplot(111)
+        fig.plot(x_axis, y_axis)
+        fig.set_title(title)
         self.draw()
 
     def plot_image(self, image, title=""):
@@ -360,15 +365,17 @@ class PlotCanvas(FigureCanvas):
         :param image: The image to display
         :param title: The title to display
         """
-        plt = self.figure.add_subplot(111)
-        plt.axis("off")
-        plt.imshow(image)
-        plt.set_title(title)
+        fig = self.figure.add_subplot(111)
+        fig.axis("off")
+        if image.ndim == 2:
+            fig.imshow(image, plt.cm.gray)
+        else:
+            fig.imshow(image)
+        fig.set_title(title)
         self.draw()
 
 
 if __name__ == '__main__':
-    print((-0.00000001) ** .65)
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
