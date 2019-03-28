@@ -7,34 +7,40 @@ import numpy as np
 import globalHDR
 import scipy.ndimage as ndimage
 
-original = globalHDR.read_image()
-# globalHDR.show(original)
 
-grey = original.astype(float).sum(2) / (255 * 3)
-# globalHDR.show(grey)
+def filter_linear_spatial(im, limit=.5):
+    globalHDR.show(im)
+    
+    grey = im.astype(float).sum(2) / (255 * 3)
+    blurry = np.zeros(im.shape)
+    #blurry = ndimage.uniform_filter(grey, size=15)
+    for i in range(0, im.ndim):
+        blurry[:, :, i] = ndimage.uniform_filter(grey, size=15)
+    globalHDR.show(blurry)
+    
+                #details = np.zeros(im.shape)
+    #print("im:", im.shape, "details:", details.shape, "blurry:", blurry.shape)
+    details = im - blurry
+                #for i in range(0, details.ndim):
+                #    details[:, :, i] = im[:, :, i] - blurry
+                #    # details = im - blurry
 
-blurry = ndimage.uniform_filter(grey, size=11)
-globalHDR.show(blurry)
-
-details = np.zeros(original.shape)
-print("original:", original.shape, "details:", details.shape, "blurry:", blurry.shape)
-for i in range(0, details.ndim):
-    details[:, :, i] = original[:, :, i] - blurry
-limit = details.mean() * 2 # * 3 # 0.5 # details.mean() # Threshold for hva som "er" detaljer
-details[details > limit] = 1
-details[details <= limit] = 0
-globalHDR.show(details)
-
-blurry_edit = globalHDR.edit_globally(blurry)
-new = np.zeros(details.shape)
-for i in range(0, details.ndim):
-    new[:, :, i] = blurry_edit + details[:, :, i]
-globalHDR.show(new)
-
-
-# -blurry = ndimage.binary_dilation(binary, structure=np.ones((2, 2))).astype(binary.dtype)
-# -#-globalHDR.show(blurry)
+    #print(np.percentile(details, 90))
+    limit = limit * 0 + np.percentile(details, 90)  # Dette betyr at kun 10% = detaljer
+                                                    #  * 2 # * 3 # 0.5 # details.mean() # Threshold for hva som "er" detaljer
+    details[details > limit] = 1
+    details[details <= limit] = 0
+    globalHDR.show(details)
+    
+    blurry_edited = globalHDR.edit_globally(blurry)  # sqrt er default
+    # blurry_edited = globalHDR.edit_luminance(blurry)
+                ##filtered = np.zeros(details.shape)
+    filtered = blurry_edited + details
+                ##for i in range(0, details.ndim):
+                ##    filtered[:, :, i] = blurry_edited + details[:, :, i]
+    globalHDR.show(filtered)
+    
+    globalHDR.compare(details, filtered)
 
 
-
-
+filter_linear_spatial(globalHDR.read_image())
