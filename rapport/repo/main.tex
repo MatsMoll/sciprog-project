@@ -1,0 +1,74 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\pagenumbering{gobble}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\newcommand{\link}[1]{{\color{blue}\footnotesize \url{#1}}}
+
+% Clickable ToC
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+\title{IMT3881 - HDR-imaging project}
+\author{
+  Mats Eikeland Mollestad\\
+  \texttt{488086}
+  \and
+  Stian Andersen Negård\\
+  \texttt{484306}
+}
+\date{\today}
+\begin{document}
+\maketitle % Makes title visible
+\newpage
+
+\section*{Introduction}
+Contents of the introduction.
+
+\section*{Git repository}
+View our progress and workflow at the following BitBucket repository:\newline
+\link{https://bitbucket.org/MatsEikelandMollestad/imt3881-2019-prosjekt/src/master/}
+\newpage
+
+\tableofcontents
+\addtocontents{toc}{\protect\setcounter{tocdepth}{2}} % ToC depth
+\newpage
+
+\pagenumbering{arabic}  %Starter normal sidetallsnummerering
+
+\section{Todo}
+Here comes a TODO-list for the report in Overleaf. \par
+
+\begin{itemize}
+\item Beskrivelse av problemstillingen
+\item Beskrivelse av framgangsmetode og løsning
+\item (Liste over funksjonalitet og oppgaver som er løst)
+\item Beskrivelse av resultater
+\item Ligninger
+\item Kode
+\item Eksempelbilder
+\item Kryssreferanser
+\item Referanser
+\item Figurer (m/ figur-liste)
+\item Tabeller (m/ tabell-liste)
+\item Lenke til repository
+\item Rapport: struktur, språk 
+\end{itemize}
+\newpage
+
+\section{Section}
+...
+\subsection{Subsection}
+...
+\subsubsection{Subsubsection}
+...
+
+
+\end{document}
