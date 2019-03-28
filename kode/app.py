@@ -35,7 +35,8 @@ class App(QWidget):
         self.hdr_image = None
         self.filter_widgets = list()
         self.filter_layout = QVBoxLayout()
-        self.add_filter_button = QPushButton("+ Legg til filter", self)
+        self.add_global_filter_button = QPushButton("Add global filter", self)
+        self.add_lum_filter_button = QPushButton("Add Lum filter", self)
         self.init_ui()
 
     def init_ui(self):
@@ -45,18 +46,21 @@ class App(QWidget):
         self.setup_image()
         self.filter_layout = QVBoxLayout()
 
-        group_box = QGroupBox("Instillinger")
+        group_box = QGroupBox("Settings")
 
-        open_image_button = QPushButton("Lag HDR", self)
+        open_image_button = QPushButton("Create HDR", self)
         open_image_button.clicked.connect(self.select_file)
 
-        self.add_filter_button.clicked.connect(self.add_filter)
-        self.add_filter_button.setEnabled(False)
-        #self.add_filter_button.setMinimumWidth(400)
+        self.add_global_filter_button.clicked.connect(self.add_global_filter)
+        self.add_global_filter_button.setEnabled(False)
+
+        self.add_lum_filter_button.clicked.connect(self.add_lum_filter)
+        self.add_lum_filter_button.setEnabled(False)
 
         button_layout = QVBoxLayout()
         button_layout.addWidget(open_image_button)
-        button_layout.addWidget(self.add_filter_button)
+        button_layout.addWidget(self.add_global_filter_button)
+        button_layout.addWidget(self.add_lum_filter_button)
         button_layout.addLayout(self.filter_layout)
         button_layout.addStretch()
         button_layout.setAlignment(Qt.AlignCenter)
@@ -88,11 +92,19 @@ class App(QWidget):
         self.main_image = PlotCanvas(width=5, height=4)
         self.main_image.plot_image(self.original_image_set.images[0])
 
-    def add_filter(self):
+    def add_global_filter(self):
         """
         Adds a filter to the layout
         """
         new_filter = FilterWidget(self.update_image_with_filter, self.remove_filter)
+        self.filter_widgets.append(new_filter)
+        self.filter_layout.addWidget(new_filter)
+
+    def add_lum_filter(self):
+        """
+        Adds a filter to the layout
+        """
+        new_filter = LumimanceFiltereWidget(self.update_image_with_filter, self.remove_filter)
         self.filter_widgets.append(new_filter)
         self.filter_layout.addWidget(new_filter)
 
@@ -115,13 +127,7 @@ class App(QWidget):
             self.edited_image = self.hdr_image.copy()
 
         for filter_widget in self.filter_widgets:
-            filter_name = filter_widget.filter_options[filter_widget.selected_filter_index]
-            if filter_name != "ingen":
-                effect_value = filter_widget.effect_value()
-                lum_value = filter_widget.luminance_value()
-                chrom_value = filter_widget.chromasity_value()
-                self.edited_image = edit_globally(self.edited_image, effect=effect_value, func=filter_name)
-                #self.edited_image = edit_luminance(self.edited_image, effect_value, lum_value, chrom_value, filter_name)
+            self.edited_image = filter_widget.apply_filter(self.edited_image)
 
         self.edited_image = self.edited_image / (self.edited_image.max() - self.edited_image.min())
         #self.edited_image[self.edited_image > 1] = 1
@@ -137,7 +143,8 @@ class App(QWidget):
 
         if ok:
             # Filename and shutter
-            self.add_filter_button.setEnabled(True)
+            self.add_global_filter_button.setEnabled(True)
+            self.add_lum_filter_button.setEnabled(True)
             image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
             self.original_image_set = ImageSet(image_info)
             self.hdr_image = self.original_image_set.hdr_image(10)
@@ -249,16 +256,13 @@ class FilterWidget(QWidget):
         self.remove_filter_function = remove_filter_function
         self.value_did_change_function = value_did_change_function
         self.effect_slider = SliderWidget(value_did_change_function, "Effekt styrke")
-        self.luminance_slider = SliderWidget(value_did_change_function, "Luminance")
-        self.chromasity_slider = SliderWidget(value_did_change_function, "Chromasity")
+        self.effect_layout = QVBoxLayout(self)
         self.init_ui()
 
     def init_ui(self):
         """
         Creates the UI for the widget
         """
-
-        effect_layout = QVBoxLayout(self)
 
         filter_box = QHBoxLayout()
 
@@ -272,13 +276,13 @@ class FilterWidget(QWidget):
         filter_box.addWidget(edit_button)
         filter_box.addWidget(remove_button)
 
-        effect_layout.addLayout(filter_box)
-        effect_layout.addWidget(self.effect_slider)
-        effect_layout.addWidget(self.luminance_slider)
-        effect_layout.addWidget(self.chromasity_slider)
-        effect_layout.setSpacing(4)
+        self.effect_slider.setEnabled(False)
 
-        self.setLayout(effect_layout)
+        self.effect_layout.addLayout(filter_box)
+        self.effect_layout.addWidget(self.effect_slider)
+        self.effect_layout.setSpacing(4)
+
+        self.setLayout(self.effect_layout)
         self.show()
 
     def effect_value(self):
@@ -287,18 +291,6 @@ class FilterWidget(QWidget):
         :return: The value of the slider
         """
         return self.effect_slider.value()
-
-    def luminance_value(self):
-        """
-        :return: The luminance value
-        """
-        return self.luminance_slider.value()
-
-    def chromasity_value(self):
-        """
-        :return: The chromasity value
-        """
-        return self.chromasity_slider.value()
 
     def present_filter_options(self):
         """
@@ -325,6 +317,57 @@ class FilterWidget(QWidget):
         A function that will be called when the remove button is clicked
         """
         self.remove_filter_function(self)
+
+    def apply_filter(self, image):
+        """
+        Apply a filter to a image
+        :param image: The image to apply the filter on
+        :return: A new image with the filter on
+        """
+        filter_name = self.filter_options[self.selected_filter_index]
+        if filter_name != "ingen":
+            effect_value = self.effect_value()
+            return edit_globally(image, effect=effect_value, func=filter_name)
+        else:
+            return image
+
+
+class LumimanceFiltereWidget(FilterWidget):
+    """
+    A Widget that presents a filter setting
+    """
+
+    def __init__(self, value_did_change_function, remove_filter_function, parent=None):
+        super(LumimanceFiltereWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
+        self.luminance_slider = SliderWidget(value_did_change_function, "Luminance")
+        self.chromasity_slider = SliderWidget(value_did_change_function, "Chromasity")
+        self.effect_layout.addWidget(self.luminance_slider)
+        self.effect_layout.addWidget(self.chromasity_slider)
+
+    def luminance_value(self):
+        """
+        :return: The luminance value
+        """
+        return self.luminance_slider.value()
+
+    def chromasity_value(self):
+        """
+        :return: The chromasity value
+        """
+        return self.chromasity_slider.value()
+
+    def apply_filter(self, image):
+        """
+        Apply a filter to a image
+        :param image: The image to apply the filter on
+        :return: A new image with the filter on
+        """
+        filter_name = self.filter_options[self.selected_filter_index]
+        if filter_name != "ingen":
+            return edit_luminance(image, self.effect_value(), self.luminance_value(),
+                                  self.chromasity_value(), filter_name)
+        else:
+            return image
 
 
 class PlotCanvas(FigureCanvas):

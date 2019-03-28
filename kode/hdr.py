@@ -13,7 +13,7 @@ def standard_weighting(x):
     :return: The weighted value
     """
     if x > 128:
-        return 255 - x
+        return 256 - x
     else:
         return x
 
@@ -25,8 +25,7 @@ def standard_weighting_vector(x):
     :return: The weighted value
     """
     res = x
-    res[x > 128] = 255 - x[x > 128]
-    res[x <= 0] = 1
+    res[x > 128] = 256 - x[x > 128]
     return res
 
 
@@ -162,7 +161,7 @@ class ImageSet:
             for i in range(0, channels.ndim - 1):
                 image[:, :, i] = reconstruct_image(
                     channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
-        return image
+        return np.exp(image)
 
     def hdr_curve(self, smoothness):
         """
