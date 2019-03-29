@@ -14,8 +14,8 @@ coverage run *_test.py && coverage report
 pros=$(coverage run *_test.py && coverage report | grep TOTAL | awk '{print $4}')
 pros=${pros%\%}
 echo $pros
-if [ "$pros" -lt "70" ]; then
-    echo "To low coverage $pros < 70"
+if [ "$pros" -lt "50" ]; then
+    echo "To low coverage $pros < 50"
     exit 1
 fi
 exit 0
