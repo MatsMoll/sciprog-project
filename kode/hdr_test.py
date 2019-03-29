@@ -1,3 +1,6 @@
+"""
+Tests for the file hdr.py
+"""
 import unittest
 import numpy as np
 import hdr
@@ -5,10 +8,11 @@ import hdr
 
 class HDRTest(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_weighting_function(self):
+        """
+        Tests the hdr.standard_weighting(...) function
+        :return:
+        """
         self.assertEqual(hdr.standard_weighting(0), 0)
         self.assertEqual(hdr.standard_weighting(256), 0)
         self.assertEqual(hdr.standard_weighting(1), 1)
@@ -16,6 +20,9 @@ class HDRTest(unittest.TestCase):
         self.assertEqual(hdr.standard_weighting(129), 127)
 
     def test_weighting_function_vector(self):
+        """
+        Tests the hdr.standard_weighting_vector(...) function
+        """
         input_array = np.array([
             0, 256, 1, 255, 129
         ])
@@ -26,6 +33,10 @@ class HDRTest(unittest.TestCase):
         self.assertTrue(np.array_equal(output, expected))
 
     def test_find_reference_points_for(self):
+        """
+        Tests the find_reference_points_for(...)
+        :return:
+        """
         gray_input = hdr.ImageSet(np.zeros((10, 10, 3)))  # 10 images with shape (10, 3)
         gray_expected = np.arange(0, 30)
         gray_output = hdr.find_reference_points_for(gray_input)
@@ -37,6 +48,10 @@ class HDRTest(unittest.TestCase):
         self.assertTrue(np.array_equal(color_output, color_expected))
 
     def test_gray_images(self):
+        """
+        Tests ImageSet.gray_images()
+        :return:
+        """
         image = np.array([[[ # One image with shape (1, 3, 3)
             [1, 2, 3],
             [2, 3, 4],
