@@ -3,12 +3,12 @@ This is the unit test file for functions within the globalHDR.py file.
 
 """
 
-import unittest as test
+import unittest
 import numpy as np
 import globalHDR
 
 
-class GlobalHDRTest(test.TestCase):
+class GlobalHDRTest(unittest.TestCase):
     """
     Tests the major functions from globalHDR.py.
 
@@ -52,4 +52,4 @@ class GlobalHDRTest(test.TestCase):
 
 
 if __name__ == '__main__':
-    test.main()
+    unittest.main()
