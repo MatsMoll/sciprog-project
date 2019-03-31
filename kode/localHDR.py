@@ -7,6 +7,8 @@ import numpy as np
 import globalHDR
 import scipy.ndimage as ndimage
 
+# Add func and effect to filter function?
+# Would give a better UI experience
 
 def blur_image(im, sigma=3):
     """
@@ -100,6 +102,6 @@ def filter_linear(im, sigma=3, level=90, mode="global", lum_scale=10, chrom_scal
     return filtered_im
 
 
-input = globalHDR.read_image("../eksempelbilder/Balls/Balls")
-filtered_im = filter_linear(input, 3, 98, "global", 10, .3, 1)
+input_im = globalHDR.read_image("../eksempelbilder/Balls/Balls")
+filtered_im = filter_linear(input_im, 3, 98, "global", 10, .3, 1)
 globalHDR.show(filtered_im)

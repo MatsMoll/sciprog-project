@@ -8,32 +8,6 @@ import numpy as np
 import imageio as io
 
 
-def edit_globally(im, effect=0.5, func="sqrt"):
-    """
-    Manipulated the input image with the given function (and effect) and returns it directly.
-
-    :param im: Input image.
-    :param func: Function for editing.
-    :param effect: Scale the function.
-    :return: Calls the manipulating function.
-    """
-    if func == "e":
-        return np.exp(im)
-    elif func == "ln":
-        return np.log(im)
-    elif func == "pow":
-        effect = np.clip(effect, 0, 4)
-        return im ** effect
-    elif func == "sqrt":
-        return np.sqrt(im)
-    elif func == "gamma":
-        effect = np.clip(effect, 0, 1)
-        return im ** effect
-    else:
-        print("Unavailable function:", func, "\n-> Returned original image.")
-        return im
-
-
 def read_image(path="../eksempelbilder/Balls/Balls", image_format=".exr"):
     """
     Reads an image in a given path.
@@ -95,6 +69,32 @@ def chromasity(im, lum):
     :return: The chromasity of the image.
     """
     return im / lum
+
+
+def edit_globally(im, effect=0.5, func="sqrt"):
+    """
+    Manipulated the input image with the given function (and effect) and returns it directly.
+
+    :param im: Input image.
+    :param func: Function for editing.
+    :param effect: Scale the function.
+    :return: Calls the manipulating function.
+    """
+    if func == "e":
+        return np.exp(im)
+    elif func == "ln":
+        return np.log(im)
+    elif func == "pow":
+        effect = np.clip(effect, 0, 4)
+        return im ** effect
+    elif func == "sqrt":
+        return np.sqrt(im)
+    elif func == "gamma":
+        effect = np.clip(effect, 0, 1)
+        return im ** effect
+    else:
+        print("Unavailable function:", func, "\n-> Returned original image.")
+        return im
 
 
 def weighted_image(lum, chroma, effect, lum_scale, chrom_scale, func="sqrt"):
