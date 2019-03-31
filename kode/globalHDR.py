@@ -157,5 +157,5 @@ if __name__ == '__main__':
     edited = edit_globally(image, 2, "sqrt")
     show(edited)
 
-    split = edit_luminance(image, 2, 1, 1, "sqrt")
+    split = edit_luminance(image, 2, 5, .1, "sqrt")
     show(split)
