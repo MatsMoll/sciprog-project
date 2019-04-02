@@ -29,7 +29,7 @@ def blur_image(im, sigma=3):
     return blurry_im
 
 
-def find_details(im, blurry_im, level):
+def find_details(im, blurry_im):#, level):
     """
     Extracts the details of the image.
     The details is defined by Uh = U0 - Ul,
@@ -42,9 +42,9 @@ def find_details(im, blurry_im, level):
     """
     detail_im = im - blurry_im
 
-    limit = np.percentile(detail_im, level)
-    detail_im[detail_im > limit] = 1
-    detail_im[detail_im <= limit] = 0
+    # limit = np.percentile(detail_im, level) ### IKKE LINEÆRE OPERASJONER
+    # detail_im[detail_im > limit] = 1
+    # detail_im[detail_im <= limit] = 0
     # globalHDR.show(detail_im)
     return detail_im
 
@@ -97,12 +97,35 @@ def filter_linear(im, sigma=3, level=90, mode="global", lum_scale=10, chrom_scal
     """
     # globalHDR.show(im)
     blurry_im = blur_image(im, sigma)
-    detail_im = find_details(im, blurry_im, level)
+    detail_im = find_details(im, blurry_im)  # , level)
     blurry_im_edited = edit_blurred_image(blurry_im, mode, lum_scale, chrom_scale)
     filtered_im = reconstruct_image(detail_im, blurry_im_edited, alpha)
     return filtered_im
 
 
-input_im = globalHDR.read_image("../eksempelbilder/Balls/Balls")
-result_im = filter_linear(input_im, 3, 98, "global", 10, .3, 1)
+input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
+result_im = filter_linear(input_im, 3, 95, "global", 1, 1, 1)
+globalHDR.show(input_im)
 globalHDR.show(result_im)
+
+sx = ndimage.sobel(input_im, axis=0, mode="constant")
+sy = ndimage.sobel(input_im, axis=1, mode="constant")
+sob = np.hypot(sx, sy)
+globalHDR.show(sob)
+
+new = input_im - sob
+globalHDR.show(new)
+
+new_blurred = blur_image(new, 3)
+globalHDR.show(new_blurred)
+# Setter sammen Sobel med blurred "bakgrunn"
+res = sob + new_blurred
+globalHDR.show(res)
+
+# Prøver å ta detaljene fra Sobel og legge de detaljene på input_im
+blur_res = blur_image(res)
+detail_res = find_details(res, blur_res)
+globalHDR.show(detail_res)
+new_res = detail_res + input_im
+globalHDR.show(new_res)
+
