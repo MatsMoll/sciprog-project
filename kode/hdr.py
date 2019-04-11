@@ -6,26 +6,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def standard_weighting(x):
+def standard_weighting(x, z_mid):
     """
     A standard weighting function for hdr reconstruction
     :param x: The x value
     :return: The weighted value
     """
-    if x > 128:
+    if x > z_mid:
         return 256 - x
     else:
         return x
 
 
-def standard_weighting_vector(x):
+def standard_weighting_vector(x, z_mid):
     """
     A standard weighting function for hdr reconstruction
     :param x: The x value
     :return: The weighted value
     """
     res = x
-    res[x > 128] = 256 - x[x > 128]
+    res[x > z_mid] = 256 - x[x > z_mid]
     return res
 
 
@@ -44,16 +44,19 @@ def hdr_channel(images, shutter, smoothness, weighting, z_mid=128):
     n = 256
     number_of_pic, number_of_pixels = np.shape(images)
 
-    a = np.zeros((number_of_pixels * number_of_pic + n + 1, number_of_pixels + n))
+    images = images.astype(int)
+
+    a = np.zeros((number_of_pixels * number_of_pic + n, number_of_pixels + n))
     b = np.zeros(np.shape(a)[0])
 
     # Setting equations
     pixel = 0
     for j in range(0, number_of_pic):
+        print(images[j].max(), images[j].min())
         for i in range(0, number_of_pixels):
             pixel_value = images[j][i]
-            weighted_value = weighting(pixel_value + 1)
-            a[pixel][int(round(pixel_value))] = weighted_value
+            weighted_value = weighting(pixel_value + 1, z_mid)
+            a[pixel][int(pixel_value)] = weighted_value
             a[pixel][n + i] = -weighted_value
             b[pixel] = weighted_value * shutter[j]     # B[j] is the shutter speed
             pixel += 1
@@ -64,7 +67,7 @@ def hdr_channel(images, shutter, smoothness, weighting, z_mid=128):
 
     # Smoothing out the result
     for i in range(0, n - 2):
-        weighted_value = weighting(i + 1)
+        weighted_value = weighting(i + 1, z_mid)
         a[pixel][i] = smoothness * weighted_value
         a[pixel][i + 1] = -2 * smoothness * weighted_value
         a[pixel][i + 2] = smoothness * weighted_value
@@ -74,7 +77,7 @@ def hdr_channel(images, shutter, smoothness, weighting, z_mid=128):
     return result[0][0:n], result[0][n:]
 
 
-def hdr_color_channels(channels, shutter, smoothness):
+def hdr_color_channels(channels, shutter, smoothness, z_mid):
     """
     This will create a HDR exposure map based on some observed pixels in some images
 
@@ -91,14 +94,13 @@ def hdr_color_channels(channels, shutter, smoothness):
 
     for channel in one_dim_channels:
         print("HDR")
-        z_mean = 256 - channels.mean()
-        g, ln_e = hdr_channel(channel, shutter, smoothness, standard_weighting, z_mid=z_mean)
+        g, ln_e = hdr_channel(channel, shutter, smoothness, standard_weighting, z_mid=z_mid)
         print("Done")
         result.append((g, ln_e))
     return result
 
 
-def reconstruct_image(channels, weighting, hdr_graph, shutter):
+def reconstruct_image(channels, weighting, hdr_graph, shutter, z_mid):
     """
     Reconstruct a image from a hdr graph
     :param channels: The different channels from the different images
@@ -107,8 +109,8 @@ def reconstruct_image(channels, weighting, hdr_graph, shutter):
     :param shutter: The ln(shutter) speeds for the different images
     :return: The hdr channel
     """
-    w_value = weighting(channels[:, :, :] + 1)
-    return (w_value * (hdr_graph[channels[:, :, :].astype(int) - 1]
+    w_value = weighting(channels[:, :, :] + 1, z_mid)
+    return (w_value * (hdr_graph[channels[:, :, :].astype(int)]
                        - shutter[:, None, None])).sum(0) / w_value.sum(0)
 
 
@@ -135,7 +137,7 @@ class ImageSet:
             self.images = np.array([])
             self.shutter_speed = []
             for path, shutter in images:
-                self.shutter_speed.append(np.log(float(shutter) * 10 ** (-5)))
+                self.shutter_speed.append(np.log(float(shutter)))
                 if self.images.size == 0:
                     self.images = np.array([load_image(path)])
                 else:
@@ -151,27 +153,28 @@ class ImageSet:
         :param smoothness: The smoothness on the curve
         :return: The hdr image
         """
-        curve = self.hdr_curve(smoothness)
-        image = np.zeros(self.original_shape)
         channels = self.channels()
+        z_mid = channels.mean()
+        curve = self.hdr_curve(smoothness, z_mid)
+        image = np.zeros(self.original_shape)
         if channels.ndim == 3:
             image = reconstruct_image(
-                channels, standard_weighting_vector, curve[0], self.shutter_speed)
+                channels, standard_weighting_vector, curve[0], self.shutter_speed, z_mid)
         else:
             for i in range(0, channels.ndim - 1):
                 image[:, :, i] = reconstruct_image(
-                    channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
+                    channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed, z_mid)
         return np.exp(image)
 
-    def hdr_curve(self, smoothness):
+    def hdr_curve(self, smoothness, z_mid):
         """
         Generates a hdr curve for a image set
         :param smoothness: The smoothness on the curve
         :return: The hdr curve
         """
-        return self.hdr_channels(find_reference_points_for(self), smoothness)
+        return self.hdr_channels(find_reference_points_for(self), smoothness, z_mid)
 
-    def hdr_channels(self, pixel_index, smoothness):
+    def hdr_channels(self, pixel_index, smoothness, z_mid):
         """
         Calculates the HDR-channels for the Image set
 
@@ -184,10 +187,10 @@ class ImageSet:
         shape = np.shape(chan)
         if len(shape) == 3:
             chan = chan.reshape((shape[0], shape[1] * shape[2]))
-            return hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness, standard_weighting)
+            return hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness, standard_weighting, z_mid=z_mid)
         else:
             chan = chan.reshape((shape[0], shape[1], shape[2] * shape[3]))
-            return hdr_color_channels(chan[:, :, pixel_index], self.shutter_speed, smoothness)
+            return hdr_color_channels(chan[:, :, pixel_index], self.shutter_speed, smoothness, z_mid)
 
     def gray_images(self):
         """
@@ -233,6 +236,10 @@ def load_image(path):
 if __name__ == "__main__":
     # Testing
     # color_image = load_color_image("../eksempelbilder/Balls/Balls_", "00256")
+
+    #hdr = imageio.imread("../eksempelbilder/Balls/Balls.exr")
+    #plt.imshow(hdr)
+    #plt.show()
 
     color_images = ImageSet([
         ("../eksempelbilder/Balls/Balls_00001.png", "00001"),
@@ -299,10 +306,9 @@ if __name__ == "__main__":
 
     print("max", color_im.max())
     print("min", color_im.min())
-    color_im = np.exp(color_im) ** 0.25
-    color_im = color_im + abs(color_im.min())
     print(color_im.min(), color_im.max())
-    plt.imshow(color_im / color_im.max())
+    #color_im = np.log(color_im + 0.01)
+    plt.imshow((color_im - color_im.min()) / (color_im.max() - color_im.min()))
     # plt.imshow(hdrImage.reshape(image_set.images[0].original_shape), plt.cm.gray)
 
     plt.show()
