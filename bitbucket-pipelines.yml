@@ -7,6 +7,5 @@ pipelines:
           - python get-pip.py
           - pip install pylint
           - pip install coverage
-          - pip install unittest
           - pip install -r requirements.txt
           - bash pipelinelint.bash
