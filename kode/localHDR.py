@@ -10,6 +10,11 @@ import globalHDR
 # Add func and effect to filter function?
 # Would give a better UI experience
 
+# # Test with only the non-linear part of the find_details
+
+# # # Implement one of the following algorithms for 4.2
+# # # 1) Canny edge detection   2) Bilateral filtering  3) Anisotropic filtering
+
 
 def blur_image(im, sigma=3):
     """
@@ -25,7 +30,7 @@ def blur_image(im, sigma=3):
         blurry_im = np.zeros(im.shape)
         for i in range(0, im.ndim):
             blurry_im[:, :, i] = ndimage.gaussian_filter(im[:, :, i], sigma)
-    # globalHDR.show(blurry_im)
+    #globalHDR.show(blurry_im)
     return blurry_im
 
 
@@ -45,7 +50,7 @@ def find_details(im, blurry_im):#, level):
     # limit = np.percentile(detail_im, level) ### IKKE LINEÆRE OPERASJONER
     # detail_im[detail_im > limit] = 1
     # detail_im[detail_im <= limit] = 0
-    # globalHDR.show(detail_im)
+    #globalHDR.show(detail_im)
     return detail_im
 
 
@@ -108,6 +113,38 @@ result_im = filter_linear(input_im, 3, 95, "global", 1, 1, 1)
 globalHDR.show(input_im)
 globalHDR.show(result_im)
 
+
+def detect_edges(im):
+    """
+    ...
+
+    :param im:
+    :return:
+    """
+
+
+## CANNY
+# Greyscale
+# Gaussisk blur
+# Determine the intensity gradient
+# Non maximum suppression
+# Double thresholding
+# Edge tracking by hysteris
+# Cleaning up
+
+canny = input_im
+#grey_canny
+blur_canny = blurry_im = ndimage.gaussian_filter(canny, sigma=1.8)
+globalHDR.show(blur_canny)
+
+#Determine the intensity gradient
+sx = ndimage.sobel(blur_canny, axis=0, mode="constant")
+sy = ndimage.sobel(blur_canny, axis=1, mode="constant")
+sobel = np.hypot(sx, sy)
+globalHDR.show(sobel)
+
+
+"""
 sx = ndimage.sobel(input_im, axis=0, mode="constant")
 sy = ndimage.sobel(input_im, axis=1, mode="constant")
 sob = np.hypot(sx, sy)
@@ -128,4 +165,4 @@ detail_res = find_details(res, blur_res)
 globalHDR.show(detail_res)
 new_res = detail_res + input_im
 globalHDR.show(new_res)
-
+"""
