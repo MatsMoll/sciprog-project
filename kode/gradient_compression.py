@@ -1,3 +1,6 @@
+"""
+A module that compress the gradient of an image
+"""
 import numpy as np
 #from cv2 import pyrUp, pyrDown, subtract
 from globalHDR import luminance
@@ -5,6 +8,13 @@ from hdr import ImageSet
 
 
 def imp(n_points, n_time, initial_values, vector_values):
+    """
+    :param n_points:
+    :param n_time:
+    :param initial_values:
+    :param vector_values:
+    :return: A image
+    """
     delta_t = 1 / (n_time - 1)
     u = initial_values
     for n in range(0, n_points - 1):
@@ -17,6 +27,13 @@ def imp(n_points, n_time, initial_values, vector_values):
 
 
 def phi(u, b, k):
+    """
+    Phi function that calculates the importance of a gradient
+    :param u: The image
+    :param b: A constant that weight large gradients
+    :param k: The image level in a gauss pyramid
+    :return:
+    """
     u_diff = diff(u)
     print(u_diff.min())
     print(u_diff.max())
@@ -110,7 +127,7 @@ def compress(original, func):
     du_0_len, du_0 = gradient_vectors(original)
     du_0_len[du_0_len == 0] = 0.001
 
-    f_du_len = du_0_len ** 0.1
+    f_du_len = func(du_0_len)
 
     print(f_du_len.max())
     print(f_du_len.min())
@@ -126,13 +143,15 @@ def compress(original, func):
     print(div_f.max())
     print(div_f.min())
 
-    return imp(2, 10, original, div_f)
+    return np.exp(imp(2, 10, original, div_f))
 
 
 def div_matrix(matrix):
     div_f = np.zeros(matrix.shape)
     div_f[1:-1, :, 0] = matrix[1:-1, :, 0] - matrix[:-2, :, 0]
     div_f[:, 1:-1, 1] = matrix[:, 1:-1, 1] - matrix[:, :-2, 1]
+    plt.imshow(np.sqrt(div_f[:, :, 0] ** 2 + div_f[:, :, 1] ** 2), plt.cm.gray)
+    plt.show()
     return div_f
 
 
@@ -147,30 +166,33 @@ if __name__ == '__main__':
     import imageio
     from hdr import load_image
 
-    #t = imageio.imread("../eksempelbilder/Balls/Balls.exr")
+    #t = imageio.imread("../eksempelbilder/Adjuster/Adjuster.exr")
 
     test_im_set = color_images = ImageSet([
-        ("../eksempelbilder/Balls/Balls_00001.png", "00001"),
-        ("../eksempelbilder/Balls/Balls_00004.png", "00004"),
-        ("../eksempelbilder/Balls/Balls_00016.png", "00016"),
-        ("../eksempelbilder/Balls/Balls_00032.png", "00032"),
-        ("../eksempelbilder/Balls/Balls_00064.png", "00064"),
-        ("../eksempelbilder/Balls/Balls_00128.png", "00128"),
-        ("../eksempelbilder/Balls/Balls_00256.png", "00256"),
-        ("../eksempelbilder/Balls/Balls_00512.png", "00512"),
-        ("../eksempelbilder/Balls/Balls_01024.png", "01024"),
-        ("../eksempelbilder/Balls/Balls_02048.png", "02048"),
-        #("../eksempelbilder/Balls/Balls_", "04096"),
-        #("../eksempelbilder/Balls/Balls_", "08192"),
-        #("../eksempelbilder/Balls/Balls_", "16384"),
-        # load_image("../eksempelbilder/Balls/Balls_", "01024"),
-        # load_image("../eksempelbilder/Balls/Balls_", "02048"),
+        ("../eksempelbilder/Adjuster/Adjuster_00001.png", "00001"),
+        ("../eksempelbilder/Adjuster/Adjuster_00004.png", "00004"),
+        ("../eksempelbilder/Adjuster/Adjuster_00016.png", "00016"),
+        ("../eksempelbilder/Adjuster/Adjuster_00032.png", "00032"),
+        ("../eksempelbilder/Adjuster/Adjuster_00064.png", "00064"),
+        ("../eksempelbilder/Adjuster/Adjuster_00128.png", "00128"),
+        ("../eksempelbilder/Adjuster/Adjuster_00256.png", "00256"),
+        ("../eksempelbilder/Adjuster/Adjuster_00512.png", "00512"),
+        ("../eksempelbilder/Adjuster/Adjuster_01024.png", "01024"),
+        #("../eksempelbilder/Adjuster/Adjuster_02048.png", "02048"),
+        #("../eksempelbilder/Adjuster/Adjuster_04096.png", "04096"),
+        #("../eksempelbilder/Adjuster/Adjuster_08192.png", "08192"),
+        #("../eksempelbilder/Adjuster/Adjuster_16384.png", "16384"),
+        # load_image("../eksempelbilder/Adjuster/Adjuster_", "01024"),
+        # load_image("../eksempelbilder/Adjuster/Adjuster_", "02048"),
     ])
-    test_im = test_im_set.hdr_image(10)
+    test_im = test_im_set.hdr_image(10) ** 0.2
 
     test_im = (test_im - test_im.min()) / (test_im.max() - test_im.min())
 
     plt.imshow(test_im)
+    plt.show()
+
+    plt.imshow(test_im.sum(2) / 3, plt.cm.gray)
     plt.show()
 
     lum_im = luminance(test_im)
@@ -179,7 +201,7 @@ if __name__ == '__main__':
     print(lum_im.min())
     print(lum_im.shape)
 
-    pyr = compress(lum_im.copy(), np.sqrt)
+    pyr = compress(np.log(lum_im.copy()), np.sqrt)
 
     print(test_im.shape)
     print(lum_im.shape)
@@ -207,6 +229,4 @@ if __name__ == '__main__':
     #plt.imshow((gradient - gradient.min()) / (gradient.max() - gradient.min()), plt.cm.gray)
     #plt.imshow((im - im.min()) / (im.max() - im.min()), plt.cm.gray)
     #plt.imshow((edit_im - edit_im.min()) / (edit_im.max() - edit_im.min()))
-    plt.show()
-    plt.imshow(test_im.sum(2) / 3, plt.cm.gray)
     plt.show()
