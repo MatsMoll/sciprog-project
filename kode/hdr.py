@@ -10,7 +10,6 @@ def standard_weighting(x):
     """
     A standard weighting function for hdr reconstruction
     :param x: The x value
-    :param z_mid: The middle z-value
     :return: The weighted value
     """
     if x > 128:
@@ -23,7 +22,6 @@ def standard_weighting_vector(x):
     """
     A standard weighting function for hdr reconstruction
     :param x: The x value
-    :param z_mid: The middle z-value
     :return: The weighted value
     """
     x[x > 128] = 255 - x[x > 128]
@@ -38,7 +36,6 @@ def hdr_channel(images, shutter, smoothness, weighting):
     :param shutter: log(shutter speed) or log(delta t) for each image j
     :param smoothness: The lambda, or a constant value that sets the smoothness
     :param weighting: The weighting function for a given value Z
-    :param z_mid: The z value to use a radiance unit (Can be different from channel to channel)
     :return: A tuple containing log(exposure) for the pixel value Z and log(irradiance) for pixel i
     """
 
@@ -89,7 +86,6 @@ def hdr_color_channels(channels, shutter, smoothness):
     :param channels: The pixel values in a 3d array where i is the location and j is the image
     :param shutter: log(shutter speed) or log(delta t) for each image j
     :param smoothness: The lambda, or a constant value that sets the smoothness
-    :param z_mid: The middle z-value
     :return: A tuple containing log(exposure) for the pixel value Z and log(irradiance) for pixel i
     """
     result = []   # [[g_r(z), ln(E_r)], ..., [g_b(z), ln(E_b)]]
@@ -113,7 +109,6 @@ def reconstruct_image(channels, weighting, hdr_graph, shutter):
     :param weighting: The weighting function
     :param hdr_graph: The HDR graph
     :param shutter: The ln(shutter) speeds for the different images
-    :param z_mid: The middle z-value
     :return: The hdr channel
     """
     w_value = weighting(channels.copy())
@@ -195,7 +190,7 @@ class ImageSet:
             output_image = reconstruct_image(
                 channels, standard_weighting_vector, curve[0], self.shutter_speed)
         else:
-            for i in range(0, channels.ndim - 1):
+            for i in range(0, channels.shape[0]):
                 output_image[:, :, i] = reconstruct_image(
                     channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
         return output_image
@@ -204,7 +199,6 @@ class ImageSet:
         """
         Generates a hdr curve for a image set
         :param smoothness: The smoothness on the curve
-        :param z_mid: The middle z-value
         :return: The hdr curve
         """
         return self.hdr_channels(find_reference_points_for(self), smoothness)
@@ -215,7 +209,6 @@ class ImageSet:
 
         :param pixel_index: The pixels to use as references
         :param smoothness: The amount of smoothing to do on the graph
-        :param z_mid: The middle z-value
         :return: The g lookup table and the ln_e.
         This will be an tuple if the images are of one dim and an array with tuples if there is more
         """
@@ -250,8 +243,8 @@ class ImageSet:
         if len(shape) == 3:
             return self.images
         else:
-            chan = np.zeros(shape[-1:] + shape[:-1])
-            for i in range(0, shape[-1]):
+            chan = np.zeros((3,) + shape[:-1])
+            for i in range(0, 3):
                 chan[i] = self.images[:, :, :, i]
 
             return chan
@@ -267,24 +260,32 @@ def load_image(path):
     return np.array(imageio.imread(path))
 
 
-if __name__ == "__main__":
-    # Testing
-
-    color_images = ImageSet([
-        ("../eksempelbilder/Balls/Balls_00001.png", "00001"),
-        ("../eksempelbilder/Balls/Balls_00004.png", "00004"),
-        ("../eksempelbilder/Balls/Balls_00016.png", "00016"),
-        ("../eksempelbilder/Balls/Balls_00032.png", "00032"),
-        ("../eksempelbilder/Balls/Balls_00064.png", "00064"),
-        ("../eksempelbilder/Balls/Balls_00128.png", "00128"),
-        ("../eksempelbilder/Balls/Balls_00256.png", "00256"),
-        ("../eksempelbilder/Balls/Balls_00512.png", "00512"),
-        ("../eksempelbilder/Balls/Balls_01024.png", "01024"),
-        ("../eksempelbilder/Balls/Balls_02048.png", "02048"),
+def test_image_set():
+    """
+    Creates a image set for testing
+    :return: The ImageSet with the info
+    """
+    return ImageSet([
+        ("../eksempelbilder/Balls Unaligned/Balls_00001.png", "00001"),
+        ("../eksempelbilder/Balls Unaligned/Balls_00004.png", "00004"),
+        ("../eksempelbilder/Balls Unaligned/Balls_00016.png", "00016"),
+        ("../eksempelbilder/Balls Unaligned/Balls_00032.png", "00032"),
+        ("../eksempelbilder/Balls Unaligned/Balls_00064.png", "00064"),
+        ("../eksempelbilder/Balls Unaligned/Balls_00128.png", "00128"),
+        ("../eksempelbilder/Balls Unaligned/Balls_00256.png", "00256"),
+        ("../eksempelbilder/Balls Unaligned/Balls_00512.png", "00512"),
+        ("../eksempelbilder/Balls Unaligned/Balls_01024.png", "01024"),
+        ("../eksempelbilder/Balls Unaligned/Balls_02048.png", "02048"),
         #("../eksempelbilder/Balls/Balls_", "04096"),
         #("../eksempelbilder/Balls/Balls_", "08192"),
         #("../eksempelbilder/Balls/Balls_", "16384"),
     ])
+
+
+if __name__ == "__main__":
+    # Testing
+
+    color_images = test_image_set()
 
     z_values = np.arange(0, 256)
     color_im = color_images.hdr_image(10)
