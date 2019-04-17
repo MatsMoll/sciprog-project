@@ -8,13 +8,29 @@ import scipy.ndimage as ndimage
 import globalHDR
 import cv2
 
-# Add func and effect to filter function?
-# Would give a better UI experience
 
-# # Test with only the non-linear part of the find_details
+def check_dim(im):
+    """
+    
+    :param im: 
+    :return: 
+    """
+    return True if im.shape[-1] == 4 else False
 
-# # # Implement one of the following algorithms for 4.2
-# # # 1) Canny edge detection   2) Bilateral filtering  3) Anisotropic filtering
+
+def extract_alpha(im):
+    """
+
+    :param im:
+    :return:
+    """
+    alpha = im[:, :, 3]
+    shape = im[:, :, :-1].shape
+    im_copy = np.zeros(shape)
+    for i in range(0, im.shape[-1] - 1):
+        im_copy[:, :, i] = im[:, :, i] * im[:, :, 3]
+    im = im_copy
+    return im, alpha
 
 
 def blur_image(im, linear='False', sigma=3):
@@ -25,16 +41,17 @@ def blur_image(im, linear='False', sigma=3):
     :param sigma: Range of gaussian filter.
     :return: Blurred image.
     """
-    if linear == True:
+    if linear:
         if im.ndim <= 2:
             blurry_im = ndimage.gaussian_filter(im, sigma)
         else:
             blurry_im = np.zeros(im.shape)
             for i in range(0, im.ndim):
                 blurry_im[:, :, i] = ndimage.gaussian_filter(im[:, :, i], sigma)
-        #globalHDR.show(blurry_im)
     else:
+        im = np.float32(im)
         blurry_im = cv2.bilateralFilter(im, 9, 150, 150)
+    # globalHDR.show(blurry_im)
     return blurry_im
 
 
@@ -49,13 +66,7 @@ def find_details(im, blurry_im):#, level):
     :param level: Detail level.
     :return: Detailed image.
     """
-    detail_im = im - blurry_im
-
-    # limit = np.percentile(detail_im, level) ### IKKE LINEÆRE OPERASJONER
-    # detail_im[detail_im > limit] = 1
-    # detail_im[detail_im <= limit] = 0
-    #globalHDR.show(detail_im)
-    return detail_im
+    return im - blurry_im
 
 
 def edit_blurred_image(blurry_im, mode, lum_scale, chrom_scale):
@@ -77,25 +88,35 @@ def edit_blurred_image(blurry_im, mode, lum_scale, chrom_scale):
     return blurry_im_edited
 
 
-def reconstruct_image(detail_im, blurry_im, alpha):  # Unsure if the weight (alpha) is necessary.
+def reconstruct_image(detail_im, blurry_im, gamma):  # Unsure if the weight (gamma) is necessary.
     """
     Reconstructs the image with a given weight.
 
     :param detail_im: Detailed part of the original image.
     :param blurry_im: Blurred part of the original image.
-    :param alpha: Weighting of details.
+    :param gamma: Weighting of details.
     :return: Reconstructed image.
     """
     if detail_im.shape == blurry_im.shape:
-        reconstructed = detail_im * alpha + blurry_im
+        reconstructed = detail_im * gamma + blurry_im
     else:
         reconstructed = np.zeros(blurry_im.shape)
         for i in range(0, blurry_im.ndim):
-            reconstructed[:, :, i] = detail_im * alpha + blurry_im[:, :, i]
+            reconstructed[:, :, i] = detail_im * gamma + blurry_im[:, :, i]
     return reconstructed
 
 
-def filter_image(im, linear, sigma=3, level=90, mode="global", lum_scale=10, chrom_scale=.3, alpha=5):
+def append_alpha(im, alpha):
+    """
+
+    :param im:
+    :param alpha:
+    :return:
+    """
+    return np.dstack((im, alpha))  # im
+
+
+def filter_image(im, linear, sigma=3, level=90, mode="global", lum_scale=10, chrom_scale=.3, gamma=5):
     """
     Filters the blurred and detailed parts of the image,
         edits the blurred parts and puts it back together.
@@ -107,22 +128,81 @@ def filter_image(im, linear, sigma=3, level=90, mode="global", lum_scale=10, chr
     :param mode: Editing mode. (Global | Luminance)
     :param lum_scale: Weighting of luminance.
     :param chrom_scale: Weighting of chromasity.
-    :param alpha: Weighting of details.
+    :param gamma: Weighting of details.
     :return:
     """
     # globalHDR.show(im)
+    alpha_exist = check_dim(im)
+    if alpha_exist:
+        im, alpha = extract_alpha(im)
+
     blurry_im = blur_image(im, linear, sigma)
     detail_im = find_details(im, blurry_im)  # , level)
     blurry_im_edited = edit_blurred_image(blurry_im, mode, lum_scale, chrom_scale)
-    filtered_im = reconstruct_image(detail_im, blurry_im_edited, alpha)
+    filtered_im = reconstruct_image(detail_im, blurry_im_edited, gamma)
+
+    if alpha_exist:
+        filtered_im = append_alpha(filtered_im, alpha)
+
     return filtered_im
 
 
+input_im = globalHDR.read_image("../eksempelbilder/Balls/Balls")
+#linear_im = filter_image(input_im, True, 3, 95, "global", 1, 1, 1)
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+#globalHDR.show(input_im)
+#globalHDR.show(linear_im)
+print("Balls", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/Adjuster/Adjuster")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("Adjuster", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/Bonita/Bonita")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("Bonita", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/Fog/Fog")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("Fog", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/Garden/Garden")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("Garden", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/MtTamNorth/MtTamNorth")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("MtTamNorth", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/MtTamWest/MtTamWest")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("MtTamWest", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
 input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
-linear_im = filter_image(input_im, linear=True, 3, 95, "global", 1, 1, 1)
-nonlinear_im = filter_image(input_im, linear=False, 3, 95, "global", 1, 1, 1)
-globalHDR.show(input_im)
-globalHDR.show(linear_im)
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("Ocean", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/StarField/StarField")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("StarField", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/StillLife/StillLife")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("StillLife", nonlinear_im.shape)
+globalHDR.show(nonlinear_im)
+
+input_im = globalHDR.read_image("../eksempelbilder/Tree/Tree")
+nonlinear_im = filter_image(input_im, False, 3, 95, "global", 1, 1, 1)
+print("Tree", nonlinear_im.shape)
 globalHDR.show(nonlinear_im)
 
 
@@ -139,16 +219,3 @@ def detect_edges(im, low_threshold=75, high_threshold=150):
     edge_im = cv2.Canny(im, low_threshold, high_threshold)
     return edge_im
 
-
-"""
-morn = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
-print(morn.dtype)
-bilateral = np.zeros(morn.shape)
-bilateral = cv2.bilateralFilter(morn, 9, 150, 150)
-
-detail_im = find_details(morn, bilateral)  # , level)
-blurry_im_edited = edit_blurred_image(bilateral, "global", 1, 1)
-filtered_im = reconstruct_image(detail_im, blurry_im_edited, 1)
-
-globalHDR.show(filtered_im)
-"""
