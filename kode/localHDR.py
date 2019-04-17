@@ -6,6 +6,8 @@ This module is rendering the input image with a local function.
 import numpy as np
 import scipy.ndimage as ndimage
 import globalHDR
+import cv2
+from skimage import morphology
 
 # Add func and effect to filter function?
 # Would give a better UI experience
@@ -109,9 +111,9 @@ def filter_linear(im, sigma=3, level=90, mode="global", lum_scale=10, chrom_scal
 
 
 input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
-result_im = filter_linear(input_im, 3, 95, "global", 1, 1, 1)
-globalHDR.show(input_im)
-globalHDR.show(result_im)
+#result_im = filter_linear(input_im, 3, 95, "global", 1, 1, 1)
+#globalHDR.show(input_im)
+#globalHDR.show(result_im)
 
 
 def detect_edges(im):
@@ -133,15 +135,107 @@ def detect_edges(im):
 # Cleaning up
 
 canny = input_im
-#grey_canny
-blur_canny = blurry_im = ndimage.gaussian_filter(canny, sigma=1.8)
+
+# Greyscale
+grey_canny = canny.astype(float).sum(2) / (255 * 3)
+globalHDR.show(grey_canny)
+
+# Gaussisk blur
+blur_canny = ndimage.gaussian_filter(grey_canny, sigma=1)
 globalHDR.show(blur_canny)
 
-#Determine the intensity gradient
+# Determine the intensity gradient and angle
 sx = ndimage.sobel(blur_canny, axis=0, mode="constant")
 sy = ndimage.sobel(blur_canny, axis=1, mode="constant")
-sobel = np.hypot(sx, sy)
-globalHDR.show(sobel)
+
+print("før convolve")
+Ix = ndimage.convolve(blur_canny, sx)
+Iy = ndimage.convolve(blur_canny, sy)
+
+
+print("etter convolve")
+G = np.hypot(Ix, Iy)
+G = G / G.max() * 255
+theta = np.arctan2(Iy, Ix)
+# sobel = np.hypot(sx, sy)    # Gradient, samme som     np.sqrt(sx**2 + sy**2)
+# theta = np.arctan2(sy, sx)  # Angle
+# globalHDR.show(sobel)
+
+
+def round_angle(angle):
+    """ Input angle must be \in [0,180) """
+    angle = np.rad2deg(angle) % 180
+    if (0 <= angle < 22.5) or (157.5 <= angle < 180):
+        angle = 0
+    elif (22.5 <= angle < 67.5):
+        angle = 45
+    elif (67.5 <= angle < 112.5):
+        angle = 90
+    elif (112.5 <= angle < 157.5):
+        angle = 135
+    return angle
+
+
+def suppression(img, D):
+    """ Step 3: Non-maximum suppression
+
+    Args:
+        img: Numpy ndarray of image to be processed (gradient-intensed image)
+        D: Numpy ndarray of gradient directions for each pixel in img
+
+    Returns:
+        ...
+    """
+
+    M, N = img.shape
+    Z = np.zeros((M,N), dtype=np.int32)
+
+    for i in range(M):
+        for j in range(N):
+            # find neighbour pixels to visit from the gradient directions
+            where = round_angle(D[i, j])
+            if where == 0:
+                if (img[i, j] >= img[i, j - 1]) and (img[i, j] >= img[i, j + 1]):
+                    Z[i, j] = img[i, j]
+            elif where == 90:
+                if (img[i, j] >= img[i - 1, j]) and (img[i, j] >= img[i + 1, j]):
+                    Z[i, j] = img[i, j]
+            elif where == 135:
+                if (img[i, j] >= img[i - 1, j - 1]) and (img[i, j] >= img[i + 1, j + 1]):
+                    Z[i, j] = img[i, j]
+            elif where == 45:
+                if (img[i, j] >= img[i - 1, j + 1]) and (img[i, j] >= img[i + 1, j - 1]):
+                    Z[i, j] = img[i, j]
+    return Z
+
+print("før suppression")
+test = suppression(grey_canny, theta)
+print("etter suppression")
+print(test)
+globalHDR.show(test)
+
+
+"""
+# Gjør om til binært
+high_limit = sobel
+max = np.percentile(sobel, 70)
+high_limit[sobel <= max] = 0
+high_limit[sobel > max] = 1
+globalHDR.show(high_limit)
+
+# low_limit = sobel
+abc = np.hypot(sx, sy)
+min = np.percentile(abc, 30)
+abc[abc <= min] = 0
+abc[abc > min] = 1
+globalHDR.show(abc)
+
+
+test = ndimage.grey_erosion(grey_canny, structure=np.ones((1, 1)))
+globalHDR.show(test)
+"""
+
+
 
 
 """
