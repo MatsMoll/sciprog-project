@@ -80,9 +80,7 @@ def luminance(im):
     if im.ndim <= 2:
         lum_channel = im
     else:
-        shape = (im.shape[0], im.shape[1], 1)
-        lum_channel = np.zeros(shape)
-        lum_channel[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
+        lum_channel = im.sum(2)
     return lum_channel
 
 
@@ -152,12 +150,9 @@ def compare(im1, im2):
 
 if __name__ == '__main__':
     image = read_image()
-    print(image.dtype, image)
     show(image)
 
     edited = edit_globally(image, 2, "sqrt")
-    edited[edited > 1] = 1
-    edited[edited <= 0] = 0
     show(edited)
 
     split = edit_luminance(image, 2, 1, 1, "sqrt")
