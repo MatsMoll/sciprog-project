@@ -53,9 +53,6 @@ def align_images(im_one, im_two):
     max_features = 500
     good_match_percent = 0.2
 
-    first_index = 1
-    second_index = 0
-
     im1Gray = cv2.cvtColor(im_one, cv2.COLOR_BGR2GRAY)
     im2Gray = cv2.cvtColor(im_two, cv2.COLOR_BGR2GRAY)
 
@@ -144,4 +141,3 @@ if __name__ == '__main__':
     print((im - im.min()) / (im.max() - im.min()))
     plt.imshow((im - im.min()) / (im.max() - im.min()))
     plt.show()
-

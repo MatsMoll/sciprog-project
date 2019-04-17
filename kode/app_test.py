@@ -2,9 +2,9 @@
 Some tests for the GUI
 """
 import unittest
-from app import SliderWidget, FilterWidget
 import sys
 from PyQt5.QtWidgets import QApplication
+from app import SliderWidget, FilterWidget
 
 # Needed in order to create the widgets
 app = QApplication(sys.argv)
