@@ -253,6 +253,7 @@ class FilterWidget(QWidget):
         self.effect_slider = QSlider(Qt.Horizontal)
         self.effect_value_label = QLabel("1")
         self.effect_label = QLabel("Effekt: Ingen")
+        self.remove_button = QPushButton("Slett", self)
         self.remove_filter_function = remove_filter_function
         self.value_did_change_function = value_did_change_function
         self.effect_slider = SliderWidget(value_did_change_function, "Effekt styrke")
@@ -269,12 +270,11 @@ class FilterWidget(QWidget):
         edit_button = QPushButton("Rediger Filter", self)
         edit_button.clicked.connect(self.present_filter_options)
 
-        remove_button = QPushButton("Slett", self)
-        remove_button.clicked.connect(self.remove_was_clicked)
+        self.remove_button.clicked.connect(self.remove_was_clicked)
 
         filter_box.addWidget(self.effect_label)
         filter_box.addWidget(edit_button)
-        filter_box.addWidget(remove_button)
+        filter_box.addWidget(self.remove_button)
 
         self.effect_slider.setEnabled(False)
 
