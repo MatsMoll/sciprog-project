@@ -7,7 +7,6 @@ import numpy as np
 import scipy.ndimage as ndimage
 import globalHDR
 import cv2
-from skimage import morphology
 
 # Add func and effect to filter function?
 # Would give a better UI experience
@@ -18,7 +17,7 @@ from skimage import morphology
 # # # 1) Canny edge detection   2) Bilateral filtering  3) Anisotropic filtering
 
 
-def blur_image(im, sigma=3):
+def blur_image(im, linear='False', sigma=3):
     """
     Blurs an image with the gaussian filter with a set range.
 
@@ -26,13 +25,16 @@ def blur_image(im, sigma=3):
     :param sigma: Range of gaussian filter.
     :return: Blurred image.
     """
-    if im.ndim <= 2:
-        blurry_im = ndimage.gaussian_filter(im, sigma)
+    if linear == True:
+        if im.ndim <= 2:
+            blurry_im = ndimage.gaussian_filter(im, sigma)
+        else:
+            blurry_im = np.zeros(im.shape)
+            for i in range(0, im.ndim):
+                blurry_im[:, :, i] = ndimage.gaussian_filter(im[:, :, i], sigma)
+        #globalHDR.show(blurry_im)
     else:
-        blurry_im = np.zeros(im.shape)
-        for i in range(0, im.ndim):
-            blurry_im[:, :, i] = ndimage.gaussian_filter(im[:, :, i], sigma)
-    #globalHDR.show(blurry_im)
+        blurry_im = cv2.bilateralFilter(im, 9, 150, 150)
     return blurry_im
 
 
@@ -75,7 +77,7 @@ def edit_blurred_image(blurry_im, mode, lum_scale, chrom_scale):
     return blurry_im_edited
 
 
-def reconstruct_image(detail_im, blurry_im, alpha):  # Unsure if the weight is necessary.
+def reconstruct_image(detail_im, blurry_im, alpha):  # Unsure if the weight (alpha) is necessary.
     """
     Reconstructs the image with a given weight.
 
@@ -84,10 +86,16 @@ def reconstruct_image(detail_im, blurry_im, alpha):  # Unsure if the weight is n
     :param alpha: Weighting of details.
     :return: Reconstructed image.
     """
-    return detail_im * alpha + blurry_im
+    if detail_im.shape == blurry_im.shape:
+        reconstructed = detail_im * alpha + blurry_im
+    else:
+        reconstructed = np.zeros(blurry_im.shape)
+        for i in range(0, blurry_im.ndim):
+            reconstructed[:, :, i] = detail_im * alpha + blurry_im[:, :, i]
+    return reconstructed
 
 
-def filter_linear(im, sigma=3, level=90, mode="global", lum_scale=10, chrom_scale=.3, alpha=5):
+def filter_image(im, linear, sigma=3, level=90, mode="global", lum_scale=10, chrom_scale=.3, alpha=5):
     """
     Filters the blurred and detailed parts of the image,
         edits the blurred parts and puts it back together.
@@ -103,7 +111,7 @@ def filter_linear(im, sigma=3, level=90, mode="global", lum_scale=10, chrom_scal
     :return:
     """
     # globalHDR.show(im)
-    blurry_im = blur_image(im, sigma)
+    blurry_im = blur_image(im, linear, sigma)
     detail_im = find_details(im, blurry_im)  # , level)
     blurry_im_edited = edit_blurred_image(blurry_im, mode, lum_scale, chrom_scale)
     filtered_im = reconstruct_image(detail_im, blurry_im_edited, alpha)
@@ -111,152 +119,36 @@ def filter_linear(im, sigma=3, level=90, mode="global", lum_scale=10, chrom_scal
 
 
 input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
-#result_im = filter_linear(input_im, 3, 95, "global", 1, 1, 1)
-#globalHDR.show(input_im)
-#globalHDR.show(result_im)
+linear_im = filter_image(input_im, linear=True, 3, 95, "global", 1, 1, 1)
+nonlinear_im = filter_image(input_im, linear=False, 3, 95, "global", 1, 1, 1)
+globalHDR.show(input_im)
+globalHDR.show(linear_im)
+globalHDR.show(nonlinear_im)
 
 
-def detect_edges(im):
+def detect_edges(im, low_threshold=75, high_threshold=150):
     """
-    ...
 
     :param im:
+    :param low_threshold:
+    :param high_threshold:
     :return:
     """
 
-
-## CANNY
-# Greyscale
-# Gaussisk blur
-# Determine the intensity gradient
-# Non maximum suppression
-# Double thresholding
-# Edge tracking by hysteris
-# Cleaning up
-
-canny = input_im
-
-# Greyscale
-grey_canny = canny.astype(float).sum(2) / (255 * 3)
-globalHDR.show(grey_canny)
-
-# Gaussisk blur
-blur_canny = ndimage.gaussian_filter(grey_canny, sigma=1)
-globalHDR.show(blur_canny)
-
-# Determine the intensity gradient and angle
-sx = ndimage.sobel(blur_canny, axis=0, mode="constant")
-sy = ndimage.sobel(blur_canny, axis=1, mode="constant")
-
-print("før convolve")
-Ix = ndimage.convolve(blur_canny, sx)
-Iy = ndimage.convolve(blur_canny, sy)
-
-
-print("etter convolve")
-G = np.hypot(Ix, Iy)
-G = G / G.max() * 255
-theta = np.arctan2(Iy, Ix)
-# sobel = np.hypot(sx, sy)    # Gradient, samme som     np.sqrt(sx**2 + sy**2)
-# theta = np.arctan2(sy, sx)  # Angle
-# globalHDR.show(sobel)
-
-
-def round_angle(angle):
-    """ Input angle must be \in [0,180) """
-    angle = np.rad2deg(angle) % 180
-    if (0 <= angle < 22.5) or (157.5 <= angle < 180):
-        angle = 0
-    elif (22.5 <= angle < 67.5):
-        angle = 45
-    elif (67.5 <= angle < 112.5):
-        angle = 90
-    elif (112.5 <= angle < 157.5):
-        angle = 135
-    return angle
-
-
-def suppression(img, D):
-    """ Step 3: Non-maximum suppression
-
-    Args:
-        img: Numpy ndarray of image to be processed (gradient-intensed image)
-        D: Numpy ndarray of gradient directions for each pixel in img
-
-    Returns:
-        ...
-    """
-
-    M, N = img.shape
-    Z = np.zeros((M,N), dtype=np.int32)
-
-    for i in range(M):
-        for j in range(N):
-            # find neighbour pixels to visit from the gradient directions
-            where = round_angle(D[i, j])
-            if where == 0:
-                if (img[i, j] >= img[i, j - 1]) and (img[i, j] >= img[i, j + 1]):
-                    Z[i, j] = img[i, j]
-            elif where == 90:
-                if (img[i, j] >= img[i - 1, j]) and (img[i, j] >= img[i + 1, j]):
-                    Z[i, j] = img[i, j]
-            elif where == 135:
-                if (img[i, j] >= img[i - 1, j - 1]) and (img[i, j] >= img[i + 1, j + 1]):
-                    Z[i, j] = img[i, j]
-            elif where == 45:
-                if (img[i, j] >= img[i - 1, j + 1]) and (img[i, j] >= img[i + 1, j - 1]):
-                    Z[i, j] = img[i, j]
-    return Z
-
-print("før suppression")
-test = suppression(grey_canny, theta)
-print("etter suppression")
-print(test)
-globalHDR.show(test)
+    im = (im * 255).astype(np.uint8)
+    edge_im = cv2.Canny(im, low_threshold, high_threshold)
+    return edge_im
 
 
 """
-# Gjør om til binært
-high_limit = sobel
-max = np.percentile(sobel, 70)
-high_limit[sobel <= max] = 0
-high_limit[sobel > max] = 1
-globalHDR.show(high_limit)
+morn = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
+print(morn.dtype)
+bilateral = np.zeros(morn.shape)
+bilateral = cv2.bilateralFilter(morn, 9, 150, 150)
 
-# low_limit = sobel
-abc = np.hypot(sx, sy)
-min = np.percentile(abc, 30)
-abc[abc <= min] = 0
-abc[abc > min] = 1
-globalHDR.show(abc)
+detail_im = find_details(morn, bilateral)  # , level)
+blurry_im_edited = edit_blurred_image(bilateral, "global", 1, 1)
+filtered_im = reconstruct_image(detail_im, blurry_im_edited, 1)
 
-
-test = ndimage.grey_erosion(grey_canny, structure=np.ones((1, 1)))
-globalHDR.show(test)
-"""
-
-
-
-
-"""
-sx = ndimage.sobel(input_im, axis=0, mode="constant")
-sy = ndimage.sobel(input_im, axis=1, mode="constant")
-sob = np.hypot(sx, sy)
-globalHDR.show(sob)
-
-new = input_im - sob
-globalHDR.show(new)
-
-new_blurred = blur_image(new, 3)
-globalHDR.show(new_blurred)
-# Setter sammen Sobel med blurred "bakgrunn"
-res = sob + new_blurred
-globalHDR.show(res)
-
-# Prøver å ta detaljene fra Sobel og legge de detaljene på input_im
-blur_res = blur_image(res)
-detail_res = find_details(res, blur_res)
-globalHDR.show(detail_res)
-new_res = detail_res + input_im
-globalHDR.show(new_res)
+globalHDR.show(filtered_im)
 """
