@@ -53,11 +53,11 @@ class HDRTest(unittest.TestCase):
         Tests the hdr.standard_weighting(...) function
         """
         z_mid = 128
-        self.assertEqual(hdr.standard_weighting(0, z_mid), 0)
-        self.assertEqual(hdr.standard_weighting(256, z_mid), 0)
-        self.assertEqual(hdr.standard_weighting(1, z_mid), 1)
-        self.assertEqual(hdr.standard_weighting(255, z_mid), 1)
-        self.assertEqual(hdr.standard_weighting(129, z_mid), 127)
+        self.assertEqual(hdr.standard_weighting(0), 0)
+        self.assertEqual(hdr.standard_weighting(256), 0)
+        self.assertEqual(hdr.standard_weighting(1), 1)
+        self.assertEqual(hdr.standard_weighting(255), 1)
+        self.assertEqual(hdr.standard_weighting(129), 127)
 
     def test_weighting_function_vector(self):
         """
@@ -151,6 +151,9 @@ class HDRTest(unittest.TestCase):
         self.assertTrue(diff < 0.5 * x * y * 3)  # 0.5 value offset per pixel and channel
 
     def test_reconstruct_image_from_graph(self):
+        """
+        Tests if the graph is correct in a gray image
+        """
         x = 30
         y = 30
         n = 6
@@ -171,6 +174,9 @@ class HDRTest(unittest.TestCase):
         self.assertTrue(diff < 0.5 * x * y)
 
     def test_reconstruct_image_from_graph_color(self):
+        """
+        Tests if the graphs is correct in a color image
+        """
         x = 30
         y = 30
         n = 6

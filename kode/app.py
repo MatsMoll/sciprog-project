@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 from hdr import ImageSet
 from globalHDR import edit_luminance, edit_globally
+from align_image import align_image_set
 
 
 class App(QWidget):
@@ -124,15 +125,16 @@ class App(QWidget):
         """
         self.edited_image = self.original_image_set.images[0].copy() / 255
         if self.hdr_image is not None:
+            print("HDR-Image")
             self.edited_image = self.hdr_image.copy()
 
         for filter_widget in self.filter_widgets:
             self.edited_image = filter_widget.apply_filter(self.edited_image)
 
-        self.edited_image = self.edited_image / (self.edited_image.max() - self.edited_image.min())
         #self.edited_image[self.edited_image > 1] = 1
         #self.edited_image[self.edited_image < 0] = 0
-        self.main_image.plot_image(self.edited_image - self.edited_image.min())
+        scaled_image = (self.edited_image - self.edited_image.min())/(self.edited_image.max() - self.edited_image.min())
+        self.main_image.plot_image(scaled_image)
 
     def select_file(self):
         """
@@ -146,7 +148,7 @@ class App(QWidget):
             self.add_global_filter_button.setEnabled(True)
             self.add_lum_filter_button.setEnabled(True)
             image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
-            self.original_image_set = ImageSet(image_info)
+            self.original_image_set = align_image_set(ImageSet(image_info))
             self.hdr_image = self.original_image_set.hdr_image(10)
             self.update_image_with_filter()
 

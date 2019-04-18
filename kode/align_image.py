@@ -13,29 +13,23 @@ def align_image_set(image_set):
     :param image_set: The ImageSet to align
     :return: A aligned ImageSets
     """
-
-    mid_image = int(len(image_set.images) / 2)
-    perspective_image = image_set.images[mid_image]
-
-    perspective_std = np.std(perspective_image)
-    shutter = image_set.shutter_speed
-
     aligned_set = image_set.images.copy()
 
-    i = 0
-    while i < aligned_set.shape[0]:
-        if np.std(image_set.images[i]) / perspective_std < 0.7:
-            np.delete(shutter, [i])
-            np.delete(aligned_set, [i])
-        elif mid_image != i:
-            aligned_set[i] = align_images(image_set.images[i], perspective_image)[0]
-        i += 1
+    for i in range(1, image_set.images.shape[0]):
+        aligned_set[i] = align_images(image_set.images[i], aligned_set[i - 1])[0]
+
+    for image in aligned_set:
+        plt.imshow(image)
+        plt.show()
 
     cropped_image = crop_image_set(aligned_set)
 
     aligned_image_set = ImageSet(cropped_image)
-    aligned_image_set.shutter_speed = image_set.shutter_speed
+    aligned_image_set.shutter_speed = image_set.shutter_speed.copy()
     aligned_image_set.original_shape = cropped_image.shape[1:]
+
+    print(image_set.original_shape)
+    print(aligned_image_set.original_shape)
 
     return aligned_image_set
 
@@ -52,6 +46,16 @@ def align_images(im_one, im_two):
     # Convert images to gray-scale
     max_features = 500
     good_match_percent = 0.2
+
+    if np.any(im_one > 1):
+        im_one = im_one.astype(np.uint8)
+    else:
+        im_one = im_one.astype(np.float32)
+
+    if np.any(im_two > 1):
+        im_two = im_two.astype(np.uint8)
+    else:
+        im_two = im_two.astype(np.float32)
 
     im1Gray = cv2.cvtColor(im_one, cv2.COLOR_BGR2GRAY)
     im2Gray = cv2.cvtColor(im_two, cv2.COLOR_BGR2GRAY)
@@ -127,7 +131,7 @@ def crop_image_set(images):
         x_2 -= 1
         y_1 += 1
 
-    return images[:, y_1:y_2, x_1:x_2]
+    return images[:, y_1:y_2 + 1, x_1:x_2 + 1]
 
 
 if __name__ == '__main__':

@@ -173,19 +173,19 @@ class ImageSet:
         channels = self.channels()
         curve = self.hdr_curve(smoothness)
 
-        if len(curve) == 2:
-            plt.plot(np.arange(0, 256), curve[0])
-            plt.show()
-            plt.plot(np.arange(0, 256), np.exp(curve[0]))
-            plt.show()
-        else:
-            for i in range(0, len(curve)):
-                plt.plot(np.arange(0, 256), curve[i][0])
-                plt.show()
-                plt.plot(np.arange(0, 256), np.exp(curve[i][0]))
-                plt.show()
+        #if len(curve) == 2:
+        #    plt.plot(np.arange(0, 256), curve[0])
+        #    plt.show()
+        #    plt.plot(np.arange(0, 256), np.exp(curve[0]))
+        #    plt.show()
+        #else:
+        #    for i in range(0, len(curve)):
+        #        plt.plot(np.arange(0, 256), curve[i][0])
+        #        plt.show()
+        #        plt.plot(np.arange(0, 256), np.exp(curve[i][0]))
+        #        plt.show()
 
-        output_image = np.zeros(self.original_shape)
+        output_image = np.zeros(self.original_shape[:-1] + (3,))
         if channels.ndim == 3:
             output_image = reconstruct_image(
                 channels, standard_weighting_vector, curve[0], self.shutter_speed)
