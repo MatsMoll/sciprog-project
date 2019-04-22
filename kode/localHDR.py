@@ -38,7 +38,7 @@ def extract_alpha(im):
 def blur_image(im, linear=True, sigma=3):  # Utvid docstring
     """
     Blurs an image with the gaussian filter with a set range (sigma).
-    The linear parameter decides wether the operation should be completed linear or non-linear.
+    The linear parameter decides whether the operation should be completed linear or non-linear.
 
     :param im: Input image.
     :param linear: (True | False)
@@ -54,7 +54,7 @@ def blur_image(im, linear=True, sigma=3):  # Utvid docstring
                 blurry_im[:, :, i] = ndimage.gaussian_filter(im[:, :, i], sigma)
     else:
         im = np.float32(im)
-        blurry_im = cv2.bilateralFilter(im, 9, 150, 150)
+        blurry_im = cv2.bilateralFilter(im, 9, 150, 150)  # Params in func?
     # globalHDR.show(blurry_im)
     return blurry_im
 
@@ -80,13 +80,15 @@ def edit_blurred_image(blurry_im, lum_scale=1, chrom_scale=1, effect=.1, func="p
     :param blurry_im: Blurred input image.
     :param lum_scale: Weighting of luminance.
     :param chrom_scale: Weighting of chromasity.
+    :param effect: Scale of the editing function.
+    :param func: Editing function. (e | ln | pow | sqrt | gamma)
     :param mode: Editing mode. (Global | Luminance)
     :return: Edited, blurred image.
     """
     if mode == "global":
-        blurry_im_edited = globalHDR.edit_globally(blurry_im, effect, func)  # Legg til effect og func som param?
+        blurry_im_edited = globalHDR.edit_globally(blurry_im, effect, func)
     else:
-        blurry_im_edited = globalHDR.edit_luminance(blurry_im, lum_scale, chrom_scale, effect, func)  # lum_scale, chrom_scale, effect=2, func="sqrt")
+        blurry_im_edited = globalHDR.edit_luminance(blurry_im, lum_scale, chrom_scale, effect, func)
     # globalHDR.show(blurry_im_edited)
     return blurry_im_edited
 
@@ -109,7 +111,7 @@ def reconstruct_image(detail_im, blurry_im, gamma):  # Unsure if the weight (gam
     return reconstructed
 
 
-def append_alpha(im, alpha):  # Should this function be renamed to "append_channel" to give a general purpose?
+def append_alpha(im, alpha):  # Should this func be renamed to "append_channel" (general purpose?)
     """
     Appends a channel to the input image.
 
@@ -117,14 +119,17 @@ def append_alpha(im, alpha):  # Should this function be renamed to "append_chann
     :param alpha: Image with alpha channel. # Rename to new_channel??
     :return: Output image with the extra channel alpha ("new_channel")?
     """
-    return np.dstack((im, alpha))  # im
+    return np.dstack((im, alpha))
 
 
-def filter_image(im, linear=True, sigma=3, mode="global", lum_scale=10, chrom_scale=.3, gamma=5, effect=1, func="pow"):  # Skriv ekstra i docstring om den ekstra kanalen
+def filter_image(im, linear=True, sigma=3, mode="global", lum_scale=10, chrom_scale=.3, gamma=5, effect=1, func="pow"):
     """
     Filters the blurred and detailed parts of the image,
         edits the blurred parts and puts it back together.
     Multiple weighting and level options are provided to edit the image the way you want.
+
+    If there is a fourth (alpha) channel, it is extracted from the image before the editing happens.
+    When the editing is completed it is appended back to the image.
 
     :param im: Input image.
     :param linear: Linear filtering (True | False)
@@ -133,6 +138,8 @@ def filter_image(im, linear=True, sigma=3, mode="global", lum_scale=10, chrom_sc
     :param lum_scale: Weighting of luminance.
     :param chrom_scale: Weighting of chromasity.
     :param gamma: Weighting of details.
+    :param effect: Scale of the editing function.
+    :param func: Editing function. (e | ln | pow | sqrt | gamma)
     :return:
     """
     # globalHDR.show(im)
@@ -155,8 +162,14 @@ if __name__ == '__main__':
     input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
     globalHDR.show(input_im)
 
-    linear_im = filter_image(input_im, True, 3, "global", 1, 1, 1, 1, "pow")
+    linear_im = filter_image(input_im, True, 3, "global", 1, 1, 1, .1, "pow")
     globalHDR.show(linear_im)
 
-    nonlinear_im = filter_image(input_im, False, 3, "global", 1, 1, 1, 1, "pow")
+    nonlinear_im = filter_image(input_im, False, 3, "global", 1, 1, 1, .1, "pow")
     globalHDR.show(nonlinear_im)
+
+    test1 = filter_image(input_im, False, 3, "global", 1, 1, 1, .1, "pow")
+    test2 = filter_image(input_im, False, 3, "global", 1, 1, .5, .1, "pow")
+    globalHDR.show(test1)
+    globalHDR.show(test2)
+    globalHDR.compare(test1, test2)
