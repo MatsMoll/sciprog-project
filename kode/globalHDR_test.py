@@ -14,7 +14,8 @@ class GlobalHDRTest(unittest.TestCase):
 
     Note! A lower and upper boundary is set with an expected image.
     """
-    def test_edit_globally(self):
+    @staticmethod
+    def test_edit_globally():
         """
         Test the global rendering with the sqrt-function.
         """
@@ -31,7 +32,8 @@ class GlobalHDRTest(unittest.TestCase):
         np.allclose(output, expected_image_lower)
         np.allclose(output, expected_image_upper)
 
-    def test_edit_luminance(self):
+    @staticmethod
+    def test_edit_luminance():
         """
         Test the luminance channel with a luminance-chromasity ratio and the default sqrt-function.
         """

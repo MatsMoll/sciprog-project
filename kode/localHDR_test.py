@@ -40,7 +40,8 @@ class LocalHDRTest(unittest.TestCase):
         self.assertEqual(localHDR.check_dim(image_115), False)  # Riktig
         self.assertNotEqual(localHDR.check_dim(image_115), True)  # Sjekker at "NotEqual" == True
 
-    def test_extract_alpha(self):
+    @staticmethod
+    def test_extract_alpha():
         """
         Tests extraction of the alpha channel (dimension).
         Will only be called if four channels (dimensions) is present, therefore there's no check.
@@ -52,8 +53,10 @@ class LocalHDRTest(unittest.TestCase):
         ]])
         im, alpha = localHDR.extract_alpha(image_134)
         np.allclose(alpha, image_134[:, :, 3])
+        np.allclose(im, image_134[:, :, :-1])
 
-    def test_blur_image(self): # utvid test til å gjelde non-linear også
+    @staticmethod
+    def test_blur_image(): # utvid test til å gjelde non-linear også
         """
         Test the blur image function with sigma value 3.
         """
@@ -70,7 +73,8 @@ class LocalHDRTest(unittest.TestCase):
         np.allclose(output, expected_image_lower)
         np.allclose(output, expected_image_upper)
 
-    def test_find_details(self): # Rewrite!!
+    @staticmethod
+    def test_find_details(): # Rewrite!!
         """
         Tests the find details function with a detail level set to the 70th-percentile.
         """
@@ -86,7 +90,8 @@ class LocalHDRTest(unittest.TestCase):
         output = localHDR.find_details(input_image, blur_input_image)
         np.allclose(output, expected_image)
 
-    def test_edit_blurred_image(self):
+    @staticmethod
+    def test_edit_blurred_image():
         """
         Tests the edit blurred image function with global editing
             and sets weighting on the luminance and chromasity channels.
@@ -118,8 +123,6 @@ class LocalHDRTest(unittest.TestCase):
         ])
         self.assertEqual(localHDR.reconstruct_image(detail_image, blurry_image, 3), 5)
 
-
-
         """
         Skal jeg skrive testene slik som ovenfor??
         self.assertEqual(localHDR.reconstruct_image(1, 2, 3), 5)
@@ -129,7 +132,8 @@ class LocalHDRTest(unittest.TestCase):
         self.assertEqual(localHDR.reconstruct_image(1, -3, 2), -1)
         """
 
-    def test_append_alpha(self):
+    @staticmethod
+    def test_append_alpha():
         """
         ...
         """
@@ -143,7 +147,8 @@ class LocalHDRTest(unittest.TestCase):
         np.allclose(image_134, appended)
 
 
-    def test_filter_linear(self):
+    @staticmethod
+    def test_filter_linear():
         """
         Tests the main function calling all the other minor helping functions.
         """
