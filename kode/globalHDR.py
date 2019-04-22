@@ -97,7 +97,7 @@ def edit_globally(im, effect=2, func="sqrt"):
         return im
 
 
-def weighted_image(lum, chroma, effect=2, lum_scale=1, chrom_scale=1, func="sqrt"):
+def weighted_image(lum, chroma, lum_scale=1, chrom_scale=1, effect=2, func="sqrt"):
     """
     This function is responsible for editing, weighting and putting the image back together.
 
@@ -122,7 +122,7 @@ def weighted_image(lum, chroma, effect=2, lum_scale=1, chrom_scale=1, func="sqrt
     return result
 
 
-def edit_luminance(im, effect=2, lum_scale=1, chrom_scale=1, func="sqrt"):
+def edit_luminance(im, lum_scale=1, chrom_scale=1, effect=2, func="sqrt"):
     """
     This function splits the input image into chromasity and luminance.
 
@@ -135,7 +135,7 @@ def edit_luminance(im, effect=2, lum_scale=1, chrom_scale=1, func="sqrt"):
     """
     lum = luminance(im)
     chroma = chromasity(im, lum)
-    return weighted_image(lum, chroma, effect, lum_scale, chrom_scale, func)
+    return weighted_image(lum, chroma, lum_scale, chrom_scale, effect, func)
 
 
 def compare(im1, im2):
