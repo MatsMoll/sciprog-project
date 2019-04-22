@@ -8,12 +8,12 @@ import numpy as np
 import imageio as io
 
 
-def read_image(path="../eksempelbilder/Balls/Balls", image_format=".exr"):
+def read_image(path="../eksempelbilder/StillLife/StillLife", image_format=".exr"):
     """
     Reads an image in a given path.
 
     Note: See example for formatting guidelines (including image format)
-    Example: ../eksempelbilder/Balls/Balls.exr
+    Example: ../eksempelbilder/StillLife/StillLife.exr
 
     :param path: The path to the image
     :param image_format: The image format
@@ -71,7 +71,7 @@ def chromasity(im, lum):
     return im / lum
 
 
-def edit_globally(im, effect=0.5, func="sqrt"):
+def edit_globally(im, effect=2, func="sqrt"):
     """
     Manipulated the input image with the given function (and effect) and returns it directly.
 
@@ -97,7 +97,7 @@ def edit_globally(im, effect=0.5, func="sqrt"):
         return im
 
 
-def weighted_image(lum, chroma, effect, lum_scale, chrom_scale, func="sqrt"):
+def weighted_image(lum, chroma, effect=2, lum_scale=1, chrom_scale=1, func="sqrt"):
     """
     This function is responsible for editing, weighting and putting the image back together.
 
@@ -122,7 +122,7 @@ def weighted_image(lum, chroma, effect, lum_scale, chrom_scale, func="sqrt"):
     return result
 
 
-def edit_luminance(im, effect=0.5, lum_scale=1, chrom_scale=1, func="sqrt"):
+def edit_luminance(im, effect=2, lum_scale=1, chrom_scale=1, func="sqrt"):
     """
     This function splits the input image into chromasity and luminance.
 
@@ -154,8 +154,8 @@ if __name__ == '__main__':
     image = read_image()
     show(image)
 
-    edited = edit_globally(image, 2, "sqrt")
+    edited = edit_globally(image, 2, "pow")
     show(edited)
 
-    split = edit_luminance(image, 2, 5, .1, "sqrt")
+    split = edit_luminance(image, 2, 5, .1, "pow")
     show(split)
