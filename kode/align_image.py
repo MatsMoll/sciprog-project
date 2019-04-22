@@ -57,8 +57,15 @@ def align_images(im_one, im_two):
     else:
         im_two = im_two.astype(np.float32)
 
-    im1Gray = cv2.cvtColor(im_one, cv2.COLOR_BGR2GRAY)
-    im2Gray = cv2.cvtColor(im_two, cv2.COLOR_BGR2GRAY)
+    im1Gray = None
+    im2Gray = None
+
+    if im_one.ndim > 2:
+        im1Gray = cv2.cvtColor(im_one, cv2.COLOR_RGB2GRAY)
+        im2Gray = cv2.cvtColor(im_two, cv2.COLOR_RGB2GRAY)
+    else:
+        im1Gray = cv2.cvtColor(np.dstack((im_one, im_one, im_one)), cv2.COLOR_RGB2GRAY)
+        im2Gray = cv2.cvtColor(np.dstack((im_two, im_two, im_two)), cv2.COLOR_RGB2GRAY)
 
     # Detect ORB features and compute descriptors.
     orb = cv2.ORB_create(max_features)
@@ -93,8 +100,7 @@ def align_images(im_one, im_two):
     h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
 
     # Use homography
-    height, width, channels = im_one.shape
-    im1Reg = cv2.warpPerspective(im_one, h, (width, height))
+    im1Reg = cv2.warpPerspective(im_one, h, (im_one.shape[1], im_one.shape[0]))
 
     return im1Reg, h
 
@@ -113,7 +119,9 @@ def crop_image_set(images):
     x_2 = images.shape[2] - 1
     y_2 = images.shape[1] - 1
 
-    alpha_channel = images[:, :, :, -1]
+    alpha_channel = images
+    if images.ndim > 3:
+        alpha_channel = images[:, :, :, -1]
 
     while not np.all(alpha_channel[:, y_1, x_1] > 0):
         y_1 += 1

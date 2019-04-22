@@ -2,12 +2,12 @@
 A module that compress the gradient of an image
 """
 import numpy as np
-#from cv2 import pyrUp, pyrDown, subtract
+from cv2 import pyrUp, pyrDown, resize
 from globalHDR import luminance
 from hdr import ImageSet
 
 
-def imp(n_points, n_time, initial_values, vector_values):
+def explicitly(n_points, n_time, initial_values, vector_values):
     """
     :param n_points:
     :param n_time:
@@ -17,11 +17,11 @@ def imp(n_points, n_time, initial_values, vector_values):
     """
     delta_t = 1 / (n_time - 1)
     u = initial_values
-    for n in range(0, n_points - 1):
+    for n in range(0, n_points):
         #vector_values = gradient_vector(luminance(u), n)
         #print(u.max(), u.min())
         #u = luminance(u) * (0.1 / vector_values) * (vector_values / 0.1) ** 0.85
-        u[1:-1, 1:-1] = delta_t * (u[2:, 1:-1] + u[:-2, 1:-1] + u[1:-1, 2:] + u[1:-1, :-2] - 4 * u[1:-1, 1:-1]) - delta_t * np.sqrt(vector_values[1:-1, 1:-1, 0] ** 2 + vector_values[1:-1, 1:-1, 1] ** 2) + u[1:-1, 1:-1]
+        u[1:-1, 1:-1] = delta_t * (u[2:, 1:-1] + u[:-2, 1:-1] + u[1:-1, 2:] + u[1:-1, :-2] - 4 * u[1:-1, 1:-1]) - delta_t * (vector_values[1:-1, 1:-1, 0] + vector_values[1:-1, 1:-1, 1]) + u[1:-1, 1:-1]
 
     return u
 
@@ -123,27 +123,60 @@ def images_two(original):
     return [np.sqrt(diffs[-1][:, :, 0] ** 2 + diffs[-1][:, :, 1] ** 2)]
 
 
-def compress(original, func):
+def compress(original, func, initial_value=None):
+    """
+    Compresses the length of the gradient vector and returns a new image
+    based on this new vector
+    :param original: The image to compress
+    :param func: The function to use when compressing the length
+    :param initial_value: The initial value to use when finding the new image. Will use the original if this is None
+    :return: A new image fitting the compressed vector
+    """
     du_0_len, du_0 = gradient_vectors(original)
-    du_0_len[du_0_len == 0] = 0.001
+    du_0_len[du_0_len == 0] = 0.0001
 
     f_du_len = func(du_0_len)
-
-    print(f_du_len.max())
-    print(f_du_len.min())
-
-    print(du_0_len.max())
-    print(du_0_len.min())
 
     f_du = f_du_len[:, :, None] * du_0 / du_0_len[:, :, None]
 
     div_f = div_matrix(f_du)
-    div_0 = div_matrix(du_0)
 
-    print(div_f.max())
-    print(div_f.min())
+    if initial_value is None:
+        return explicitly(10, 10, original, div_f)
+    else:
+        return explicitly(10, 10, initial_value, div_f)
 
-    return np.exp(imp(2, 10, original, div_f))
+
+def compress_pyr(original, func):
+
+    shape = original.shape
+
+    images = [original]
+    lowest_res = original
+
+    while images[-1].shape[0] * images[-1].shape[1] > 32 * 4:
+        print("New: ", shape, (int(shape[0] / 2), int(shape[1] / 2)))
+        lowest_res = pyrDown(lowest_res)
+        shape = np.shape(lowest_res)
+        images.append(lowest_res)
+
+    initial_value = luminance(images[-1])
+    for i in range(1, len(images) + 1):
+        lum = images[-i]
+
+        print(images[-i].shape)
+        print(initial_value.shape)
+
+        if initial_value.shape != images[-i].shape[0:-1]:
+            initial_value = resize(pyrUp(initial_value), tuple(reversed(lum.shape)))
+            print(lum.shape)
+            print("Upscaled", initial_value.shape)
+
+        initial_value = compress(lum, func, initial_value=initial_value)
+
+        #initial_value = (images[-i] / lum[:, :]) ** 1 * compressed
+
+    return initial_value
 
 
 def div_matrix(matrix):
@@ -166,24 +199,24 @@ if __name__ == '__main__':
     import imageio
     from hdr import load_image
 
-    #t = imageio.imread("../eksempelbilder/Adjuster/Adjuster.exr")
+    #t = imageio.imread("../eksempelbilder/MtTamNorth/MtTamNorth.exr")
 
     test_im_set = color_images = ImageSet([
-        ("../eksempelbilder/Adjuster/Adjuster_00001.png", "00001"),
-        ("../eksempelbilder/Adjuster/Adjuster_00004.png", "00004"),
-        ("../eksempelbilder/Adjuster/Adjuster_00016.png", "00016"),
-        ("../eksempelbilder/Adjuster/Adjuster_00032.png", "00032"),
-        ("../eksempelbilder/Adjuster/Adjuster_00064.png", "00064"),
-        ("../eksempelbilder/Adjuster/Adjuster_00128.png", "00128"),
-        ("../eksempelbilder/Adjuster/Adjuster_00256.png", "00256"),
-        ("../eksempelbilder/Adjuster/Adjuster_00512.png", "00512"),
-        ("../eksempelbilder/Adjuster/Adjuster_01024.png", "01024"),
-        #("../eksempelbilder/Adjuster/Adjuster_02048.png", "02048"),
-        #("../eksempelbilder/Adjuster/Adjuster_04096.png", "04096"),
-        #("../eksempelbilder/Adjuster/Adjuster_08192.png", "08192"),
-        #("../eksempelbilder/Adjuster/Adjuster_16384.png", "16384"),
-        # load_image("../eksempelbilder/Adjuster/Adjuster_", "01024"),
-        # load_image("../eksempelbilder/Adjuster/Adjuster_", "02048"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00001.png", "00001"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00004.png", "00004"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00016.png", "00016"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00032.png", "00032"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00064.png", "00064"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00128.png", "00128"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00256.png", "00256"),
+        ("../eksempelbilder/MtTamNorth/MtTamNorth_00512.png", "00512"),
+        #("../eksempelbilder/MtTamNorth/MtTamNorth_01024.png", "01024"),
+        #("../eksempelbilder/MtTamNorth/MtTamNorth_02048.png", "02048"),
+        #("../eksempelbilder/MtTamNorth/MtTamNorth_04096.png", "04096"),
+        #("../eksempelbilder/MtTamNorth/MtTamNorth_08192.png", "08192"),
+        #("../eksempelbilder/MtTamNorth/MtTamNorth_16384.png", "16384"),
+        # load_image("../eksempelbilder/MtTamNorth/MtTamNorth_", "01024"),
+        # load_image("../eksempelbilder/MtTamNorth/MtTamNorth_", "02048"),
     ])
     test_im = test_im_set.hdr_image(10) ** 0.2
 
@@ -201,7 +234,8 @@ if __name__ == '__main__':
     print(lum_im.min())
     print(lum_im.shape)
 
-    pyr = compress(np.log(lum_im.copy()), np.sqrt)
+    #pyr = np.exp(compress(np.log(lum_im.copy()), np.sqrt))
+    pyr = np.exp(compress_pyr(np.log(lum_im.copy()), lambda x: x ** 0.8))
 
     print(test_im.shape)
     print(lum_im.shape)
