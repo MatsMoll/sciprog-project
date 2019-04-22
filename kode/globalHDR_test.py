@@ -12,7 +12,7 @@ class GlobalHDRTest(unittest.TestCase):
     """
     Tests the major functions from globalHDR.py.
 
-    Note! A lower and upper boundary is set with a expected image.
+    Note! A lower and upper boundary is set with an expected image.
     """
     def test_edit_globally(self):
         """
