@@ -157,5 +157,5 @@ if __name__ == '__main__':
     edited = edit_globally(image, 2, "pow")
     show(edited)
 
-    split = edit_luminance(image, 2, 5, .1, "pow")
+    split = edit_luminance(image, 2, 4, .1, "pow")
     show(split)

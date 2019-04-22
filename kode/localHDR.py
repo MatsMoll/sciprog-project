@@ -167,9 +167,3 @@ if __name__ == '__main__':
 
     nonlinear_im = filter_image(input_im, False, 3, "global", 1, 1, 1, .1, "pow")
     globalHDR.show(nonlinear_im)
-
-    test1 = filter_image(input_im, False, 3, "global", 1, 1, 1, .1, "pow")
-    test2 = filter_image(input_im, False, 3, "global", 1, 1, .5, .1, "pow")
-    globalHDR.show(test1)
-    globalHDR.show(test2)
-    globalHDR.compare(test1, test2)
