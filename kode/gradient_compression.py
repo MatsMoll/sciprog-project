@@ -20,7 +20,7 @@ def explicitly(n_points, n_time, initial_values, vector_values):
     """
     delta_t = 1 / (n_time - 1)
     u = initial_values
-    for n in range(0, n_points):
+    for _ in range(0, n_points):
         u[1:-1, 1:-1] = delta_t * (u[2:, 1:-1] + u[:-2, 1:-1] + u[1:-1, 2:] + u[1:-1, :-2] - 4 * u[1:-1, 1:-1]) \
                         - delta_t * (vector_values[1:-1, 1:-1, 0] + vector_values[1:-1, 1:-1, 1]) + u[1:-1, 1:-1]
 
@@ -77,14 +77,11 @@ def compress_gradient_pyr(original, func):
     :return: The new image / luminace
     """
 
-    shape = original.shape
-
     images = [original]
     lowest_res = original
 
     while images[-1].shape[0] * images[-1].shape[1] > 32 * 4:
         lowest_res = pyrDown(lowest_res)
-        shape = np.shape(lowest_res)
         images.append(lowest_res)
 
     initial_value = luminance(images[-1])
@@ -116,25 +113,21 @@ def divergence_matrix(matrix):
     return div_f
 
 
-def gradient_vectors(image):
+def gradient_vectors(image_matrix):
     """
     Calculates the gradient vector and length of a image
 
-    :param image: The image to calculate for
+    :param image_matrix: The image to calculate for
 
     :return: A tuple containing the length and vector
     """
-    du_0 = diff_two(image)
+    du_0 = diff_two(image_matrix)
     du_0_len = np.sqrt(du_0[:, :, 0] ** 2 + du_0[:, :, 1] ** 2)
     return du_0_len, du_0
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    import imageio
-    from hdr import load_image
-
-    #t = imageio.imread("../eksempelbilder/Balls/Balls.exr")
 
     test_im_set = color_images = ImageSet([
         ("../eksempelbilder/Tree/Tree_00001.png", "00001"),
@@ -190,7 +183,8 @@ if __name__ == '__main__':
     plt.imshow((pyr - pyr.min())/(pyr.max() - pyr.min()), plt.cm.gray)
     plt.show()
 
-    plt.imshow((test_im_reconstruct - test_im_reconstruct.min())/(test_im_reconstruct.max() - test_im_reconstruct.min()))
+    plt.imshow((test_im_reconstruct - test_im_reconstruct.min())
+               / (test_im_reconstruct.max() - test_im_reconstruct.min()))
     #im = test_im * gradient[:, :, None]
     #edit_im = test_im
     #print(im.max(), im.min())

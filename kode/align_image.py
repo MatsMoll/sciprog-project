@@ -97,7 +97,7 @@ def align_images(im_one, im_two):
         points2[i, :] = key_points2[match.trainIdx].pt
 
     # Find homography
-    h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
+    h, _ = cv2.findHomography(points1, points2, cv2.RANSAC)
 
     # Use homography
     im1Reg = cv2.warpPerspective(im_one, h, (im_one.shape[1], im_one.shape[0]))
