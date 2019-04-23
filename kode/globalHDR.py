@@ -126,7 +126,7 @@ def edit_luminance(lum, chroma, effect):
 
     :return: The edited image.
     """
-    lum = edit_globally(lum, effect.level, effect.func)
+    lum = edit_globally(lum, effect)
 
     lum = lum * effect.lum_scale
     chroma = chroma * effect.chrom_scale
