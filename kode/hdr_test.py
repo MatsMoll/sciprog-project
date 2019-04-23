@@ -42,6 +42,9 @@ class HDRTest(unittest.TestCase):
 
         return rand_im, im_set
 
+    def setUp(self):
+        pass
+
     def test_weighting_function(self):
         """
         Tests the hdr.standard_weighting(...) function
