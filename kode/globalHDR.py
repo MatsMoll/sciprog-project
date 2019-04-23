@@ -54,9 +54,7 @@ def luminance(im):
     if im.ndim <= 2:
         lum_channel = im
     else:
-        shape = (im.shape[0], im.shape[1], 1)
-        lum_channel = np.zeros(shape)
-        lum_channel[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
+        lum_channel = im.sum(2)
     return lum_channel
 
 
