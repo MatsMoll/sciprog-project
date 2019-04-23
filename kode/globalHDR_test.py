@@ -14,8 +14,7 @@ class GlobalHDRTest(unittest.TestCase):
 
     Note! A lower and upper boundary is set with an expected image.
     """
-    @staticmethod
-    def test_edit_globally():
+    def test_edit_globally(self):
         """
         Test the global rendering with the sqrt-function.
         """
@@ -29,11 +28,10 @@ class GlobalHDRTest(unittest.TestCase):
             0.101, 0.317, 0.448, 0.708, 0.867, 0.995
         ])
         output = globalHDR.edit_globally(input_image, "sqrt")
-        np.allclose(output, expected_image_lower)
-        np.allclose(output, expected_image_upper)
+        self.assertTrue(np.allclose(output, expected_image_lower))
+        self.assertTrue(np.allclose(output, expected_image_upper))
 
-    @staticmethod
-    def test_edit_luminance():
+    def test_edit_luminance(self):
         """
         Test the luminance channel with a luminance-chromasity ratio and the default sqrt-function.
         """
@@ -49,8 +47,8 @@ class GlobalHDRTest(unittest.TestCase):
         lum_scale = 5
         chrom_scale = .8
         output = globalHDR.edit_luminance(input_image, lum_scale, chrom_scale)
-        np.allclose(output, expected_image_lower)
-        np.allclose(output, expected_image_upper)
+        self.assertTrue(np.allclose(output, expected_image_lower))
+        self.assertTrue(np.allclose(output, expected_image_upper))
 
 
 if __name__ == '__main__':

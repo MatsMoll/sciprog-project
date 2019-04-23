@@ -93,7 +93,10 @@ def edit_globally(im, effect):
     if effect.func == "e":
         return np.exp(im)
     elif effect.func == "ln":
-        return np.log(im)
+        if (im <= 0).any():
+            return np.log(im + im.min() + .1)
+        else:
+            return np.log(im)
     elif effect.func == "pow":
         effect.level = np.clip(effect.level, 0, 4)
         return im ** effect.level
@@ -103,7 +106,6 @@ def edit_globally(im, effect):
         effect.level = np.clip(effect.level, 0, 1)
         return im ** effect.level
     else:
-        print("Unavailable function:", effect.func, "\n-> Returned original image.")
         return im
 
 

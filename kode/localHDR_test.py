@@ -6,6 +6,7 @@ This is the unit test file for functions within the localHDR.py file.
 import unittest
 import numpy as np
 import localHDR
+from filter_config import FilterImageConfig, BlurImageConfig, EffectConfig
 
 
 class LocalHDRTest(unittest.TestCase):
@@ -14,67 +15,72 @@ class LocalHDRTest(unittest.TestCase):
 
     Note! A lower and upper boundary is set with a expected image.
     """
-    def test_check_dim(self):
+    def test_has_alpha(self):
         """
         Tests the last dimension of input arrays to see if they have
             a fourth channel (dimension) present.
         """
-        image_123 = np.array([[  # One image with shape (1, 2, 3) ## Rename to image_3d
+        image_3d = np.array([[  # One image with shape (1, 2, 3) ## Rename to image_3d
             [1, 2, 3],
             [4, 5, 6]
         ]])
-        image_134 = np.array([[  # One image with shape (1, 3, 4) ## Rename to image_4d
+        image_4d = np.array([[  # One image with shape (1, 3, 4) ## Rename to image_4d
             [1, 2, 3, 4],
             [4, 5, 6, 7],
             [8, 9, 10, 11]
         ]])
-        image_115 = np.array([[  # One image with shape (1, 1, 5) ## Rename to image_5d
+        image_5d = np.array([[  # One image with shape (1, 1, 5) ## Rename to image_5d
             [1, 2, 3, 4, 5]
         ]])
-        self.assertEqual(localHDR.check_dim(image_123), False)  # Riktig
-        self.assertNotEqual(localHDR.check_dim(image_123), True)  # Sjekker at "NotEqual" == True
+        self.assertEqual(localHDR.has_alpha(image_3d), False)
+        self.assertEqual(localHDR.has_alpha(image_4d), True)
+        self.assertEqual(localHDR.has_alpha(image_5d), False)
 
-        self.assertEqual(localHDR.check_dim(image_134), True)  # Riktig
-        self.assertNotEqual(localHDR.check_dim(image_134), False)  # Sjekker at "NotEqual" == True
-
-        self.assertEqual(localHDR.check_dim(image_115), False)  # Riktig
-        self.assertNotEqual(localHDR.check_dim(image_115), True)  # Sjekker at "NotEqual" == True
-
-    @staticmethod
-    def test_extract_alpha():
+    def test_extract_alpha(self):
         """
         Tests extraction of the alpha channel (dimension).
         Will only be called if four channels (dimensions) is present, therefore there's no check.
         """
-        image_134 = np.array([[  # One image with shape (1, 3, 4) ## Rename to image_4d
+        image_4d = np.array([[  # One image with shape (1, 3, 4) ## Rename to image_4d
             [1, 2, 3, 4],
             [4, 5, 6, 7],
             [8, 9, 10, 11]
         ]])
-        im, alpha = localHDR.extract_alpha(image_134)
-        np.allclose(alpha, image_134[:, :, 3])
-        np.allclose(im, image_134[:, :, :-1])
+        im, alpha = localHDR.extract_alpha(image_4d)
+        self.assertTrue(np.allclose(alpha, image_4d[:, :, 3]))
 
-    @staticmethod
-    def test_blur_image(): # utvid test til å gjelde non-linear også
+    def test_blur_image(self): # utvid test til å gjelde non-linear også
         """
         Test the blur image function with sigma value 3.
         """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
         ])
-        expected_image_lower = np.array([
+        expected_linear_image_lower = np.array([
             0.286, 0.323, 0.387, 0.461, 0.526, 0.564
         ])
-        expected_image_upper = np.array([
+        expected_linear_image_upper = np.array([
             0.287, 0.324, 0.388, 0.462, 0.527, 0.565
         ])
-        output = localHDR.blur_image(input_image, 3)
-        np.allclose(output, expected_image_lower)
-        np.allclose(output, expected_image_upper)
+        output_linear_config = BlurImageConfig()
+        output_linear_config.sigma = 3
+        output_linear = localHDR.blur_image(input_image, output_linear_config)
+        self.assertTrue(np.allclose(output_linear, expected_linear_image_lower, atol=6e-03))
+        self.assertTrue(np.allclose(output_linear, expected_linear_image_upper, atol=6e-03))
 
-    @staticmethod
-    def test_find_details(): # Rewrite!!
+        input_image = np.array([
+            0.01, 0.1, 0.2, 0.5, 0.75, 0.99
+        ])
+        expected_nonlinear_image = np.array([
+            0.22020, 0.26142, 0.36163, 0.47307, 0.55185, 0.58400
+        ])
+        output_nonlinear_config = BlurImageConfig()
+        output_nonlinear_config.sigma = 3
+        output_nonlinear_config.linear = False
+        output_nonlinear = localHDR.blur_image(input_image, output_nonlinear_config)
+        self.assertTrue(np.allclose(output_nonlinear, expected_nonlinear_image, atol=6e-01))
+
+    def test_find_details(self): # Rewrite!!
         """
         Tests the find details function with a detail level set to the 70th-percentile.
         """
@@ -84,14 +90,17 @@ class LocalHDRTest(unittest.TestCase):
         blur_input_image = np.array([
             0.28641213, 0.32315277, 0.3871898, 0.46174035, 0.52684723, 0.56466555
         ])
-        expected_image = np.array([
-            0, 0, 0, 0, 1, 1
+        expected_image_lower = np.array([
+            -0.277, -0.224, -0.188, 0.038, 0.223, 0.425
+        ])
+        expected_image_upper = np.array([
+            -0.276, -0.223, -0.187, 0.039, 0.224, 0.426
         ])
         output = localHDR.find_details(input_image, blur_input_image)
-        np.allclose(output, expected_image)
+        self.assertTrue(np.allclose(output, expected_image_lower, atol=6e-03))
+        self.assertTrue(np.allclose(output, expected_image_upper, atol=6e-03))
 
-    @staticmethod
-    def test_edit_blurred_image():
+    def test_edit_blurred_image(self):
         """
         Tests the edit blurred image function with global editing
             and sets weighting on the luminance and chromasity channels.
@@ -100,14 +109,20 @@ class LocalHDRTest(unittest.TestCase):
             0.28641213, 0.32315277, 0.3871898, 0.46174035, 0.52684723, 0.56466555
         ])
         expected_image_lower = np.array([
-            0.535, 0.568, 0.622, 0.679, 0.725, 0.751
+            0.384, 0.395, 0.414, 0.435, 0.454, 0.465
         ])
         expected_image_upper = np.array([
-            0.536, 0.569, 0.623, 0.680, 0.726, 0.752
+            0.385, 0.396, 0.415, 0.436, 0.455, 0.466
         ])
-        output = localHDR.edit_blurred_image(blur_input_image, "global", 10, .2)
-        np.allclose(output, expected_image_lower)
-        np.allclose(output, expected_image_upper)
+        output_config = FilterImageConfig()
+        output_config.effect.sigma = 3
+        output_config.blur.linear = True
+        output = localHDR.blur_image(blur_input_image, output_config.blur)
+        output_config.mode = "global"
+        output_config.lum_scale = 10
+        output_config.chrom_scale = .2
+        self.assertTrue(np.allclose(output, expected_image_lower, atol=6e-03))
+        self.assertTrue(np.allclose(output, expected_image_upper, atol=6e-03))
 
     def test_reconstruct_image(self):  # Skriv om test
         """
@@ -115,40 +130,50 @@ class LocalHDRTest(unittest.TestCase):
         Parameters a, b, c:
             a * c + b = reconstructed image.
         """
-        detail_image = np.array([
-            1
-        ])
-        blurry_image = np.array([
-            2
-        ])
-        self.assertEqual(localHDR.reconstruct_image(detail_image, blurry_image, 3), 5)
+        first_product = np.array([1])
+        link = np.array([2])
+        second_product = FilterImageConfig()
+        second_product.gamma = 3  # 1*3+2
+        self.assertEqual(localHDR.reconstruct_image(first_product, link, second_product), 5)
 
-        """
-        Skal jeg skrive testene slik som ovenfor??
-        self.assertEqual(localHDR.reconstruct_image(1, 2, 3), 5)
-        self.assertEqual(localHDR.reconstruct_image(2, 3, 3), 9)
-        self.assertEqual(localHDR.reconstruct_image(0, 0, 99), 0)
-        self.assertEqual(localHDR.reconstruct_image(13, 3, 2), 29)
-        self.assertEqual(localHDR.reconstruct_image(1, -3, 2), -1)
-        """
+        first_product = np.array([2])
+        link = np.array([3])
+        second_product = FilterImageConfig()
+        second_product.gamma = 3  # 2*3+3
+        self.assertEqual(localHDR.reconstruct_image(first_product, link, second_product), 9)
 
-    @staticmethod
-    def test_append_alpha():
+        first_product = np.array([0])
+        link = np.array([0])
+        second_product = FilterImageConfig()
+        second_product.gamma = 99  # 0*99+0
+        self.assertEqual(localHDR.reconstruct_image(first_product, link, second_product), 0)
+
+        first_product = np.array([13])
+        link = np.array([3])
+        second_product = FilterImageConfig()
+        second_product.gamma = 2  # 13*2+3
+        self.assertEqual(localHDR.reconstruct_image(first_product, link, second_product), 29)
+
+        first_product = np.array([1])
+        link = np.array([-3])
+        second_product = FilterImageConfig()
+        second_product.gamma = 2  # 1*2+(-2)
+        self.assertEqual(localHDR.reconstruct_image(first_product, link, second_product), -1)
+
+    def test_append_channel(self):
         """
         ...
         """
-        image_134 = np.array([[  # One image with shape (1, 3, 4) ## Rename to image_4d
+        image_4d = np.array([[
             [1, 2, 3, 4],
             [4, 5, 6, 7],
             [8, 9, 10, 11]
         ]])
-        im, alpha = localHDR.extract_alpha(image_134)
-        appended = localHDR.append_alpha(im, alpha)
-        np.allclose(image_134, appended)
+        im, alpha = localHDR.extract_alpha(image_4d)
+        appended = localHDR.append_channel(im, alpha)
+        self.assertTrue(np.allclose(image_4d, appended))
 
-
-    @staticmethod
-    def test_filter_linear():
+    def test_filter_linear(self):
         """
         Tests the main function calling all the other minor helping functions.
         """
@@ -156,14 +181,21 @@ class LocalHDRTest(unittest.TestCase):
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
         ])
         expected_image_lower = np.array([
-            0.639, 0.643, 0.648, 0.655, 0.660, 5.663
+            0.240, 0.329, 0.427, 0.725, 0.974, 1.213
         ])
         expected_image_upper = np.array([
-            0.640, 0.644, 0.649, 0.656, 0.661, 5.664
+            0.241, 0.330, 0.428, 0.726, 0.975, 1.214
         ])
-        output = localHDR.filter_image(input_image, True, 5, 99, "global", 5, .1, 5)
-        np.allclose(output, expected_image_lower)
-        np.allclose(output, expected_image_upper)
+        output_config = FilterImageConfig()
+        output_config.blur.linear = True
+        output_config.blur.sigma = 5
+        output_config.effect.mode = "global"
+        output_config.effect.lum_scale = 5
+        output_config.effect.chrom_scale = .1
+        output_config.effect.level = 5
+        output = localHDR.filter_image(input_image, output_config)
+        self.assertTrue(np.allclose(output, expected_image_lower, atol=6e-03))
+        self.assertTrue(np.allclose(output, expected_image_upper, atol=6e-03))
 
 
 if __name__ == '__main__':
