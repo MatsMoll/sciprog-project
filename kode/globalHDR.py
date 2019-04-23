@@ -6,6 +6,7 @@ This module is rendering the input image with a global function.
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio as io
+import localHDR
 
 
 def read_image(path="../eksempelbilder/StillLife/StillLife", image_format=".exr"):
@@ -173,8 +174,10 @@ if __name__ == '__main__':
     image = read_image()
     show(image)
 
-    edited = edit_globally(image, 2, "pow")
-    show(edited)
+    im_global_config = localHDR.FilterImageConfig()
+    im_global = edit_globally(image, im_global_config)
+    show(im_global)
 
-    split = split_image(image, 2, 4, .1, "pow")
-    show(split)
+    im_lum_config = localHDR.FilterImageConfig()
+    im_lum = edit_luminance(image, im_lum_config)
+    show(im_lum)
