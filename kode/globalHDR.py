@@ -10,26 +10,28 @@ import imageio as io
 
 def read_image(path="../eksempelbilder/StillLife/StillLife", image_format=".exr"):
     """
-    Reads an image in a given path.
+    Reads an image from a given path.
 
-    Note: See example for formatting guidelines (including image format)
+    Note: See example for formatting guidelines (including image format).
     Example: ../eksempelbilder/StillLife/StillLife.exr
 
-    :param path: The path to the image
-    :param image_format: The image format
-    :return: The desired image
+    :param path: The path to the image.
+    :type path: String.
+
+    :param image_format: The image format.
+    :type image_format: String.
+
+    :return: The desired image.
     """
-    im = io.imread(path + image_format)
-    im[im > 1] = 1
-    im[im <= 0] = 0.1 * (10 ** -10)
-    return im
+    return io.imread(path + image_format)
 
 
 def show(im):
     """
-    Shows a given image whether it's monochrome or colorful.
+    Shows a given image whether it's monochrome or containing color channels.
 
-    :param im: Input image
+    :param im: Input image.
+    :type im: Numpy array.
     """
     im[im > 1] = 1
     im[im <= 0] = 0.1 * (10 ** -10)
@@ -42,13 +44,15 @@ def show(im):
 
 def luminance(im):
     """
-    Takes an input image and creates a new luminance channel. (L = R + G + B)
+    Takes an input image and creates a new luminance channel. ( L = R + G + B )
 
     Note!
     Monochrome images: Luminance channel = brightness in each pixel.
-    Colorful images: Luminance channel = sum of brightness of the color channels.
+    Colorful images: Luminance channel = sum of brightness in the color channels.
 
     :param im: Input image.
+    :type im: Numpy array.
+
     :return: Luminance channel.
     """
     if im.ndim <= 2:
@@ -62,89 +66,104 @@ def luminance(im):
 
 def chromasity(im, lum):
     """
-    Takes an input image and returns the chromasity with the formula C = [R/L, G/L, B/L]
+    Takes an input image and returns the chromasity. ( C = [R/L, G/L, B/L] )
 
     :param im: Input image.
-    :param lum: Luminance channel from input image.
+    :type im: Numpy array.
+
+    :param lum: Luminance of input image.
+    :type lum: Numpy array.
+
     :return: The chromasity of the image.
     """
     return im / lum
 
 
-def edit_globally(im, effect=2, func="sqrt"):
+def edit_globally(im, effect):
     """
-    Manipulated the input image with the given function (and effect) and returns it directly.
+    Manipulated the input image with effects from the effect config and returns the image directly.
 
     :param im: Input image.
-    :param func: Function for editing.
-    :param effect: Scale the function.
-    :return: Calls the manipulating function.
+    :type im: Numpy array.
+
+    :param effect: Config for the effects.
+    :type effect: EffectConfig class.
+
+    :return: The manipulated image.
     """
-    if func == "e":
+    if effect.func == "e":
         return np.exp(im)
-    elif func == "ln":
+    elif effect.func == "ln":
         return np.log(im)
-    elif func == "pow":
-        effect = np.clip(effect, 0, 4)
-        return im ** effect
-    elif func == "sqrt":
+    elif effect.func == "pow":
+        effect.level = np.clip(effect.level, 0, 4)
+        return im ** effect.level
+    elif effect.func == "sqrt":
         return np.sqrt(im)
-    elif func == "gamma":
-        effect = np.clip(effect, 0, 1)
-        return im ** effect
+    elif effect.func == "gamma":
+        effect.level = np.clip(effect.level, 0, 1)
+        return im ** effect.level
     else:
-        print("Unavailable function:", func, "\n-> Returned original image.")
+        print("Unavailable function:", effect.func, "\n-> Returned original image.")
         return im
 
 
-def weighted_image(lum, chroma, lum_scale=1, chrom_scale=1, effect=2, func="sqrt"):
+def edit_luminance(lum, chroma, effect):
     """
-    This function is responsible for editing, weighting and putting the image back together.
+    This function is responsible for editing, weighting and merging the image.
 
     Editing happens on the luminance channel alone to reduce saturation.
-    This function applies a ratio between luminance and chromasity, customisable through the GUI.
+    Scales, levels and other properties are customisable through the GUI.
     Output image is defined by luminance * chromasity.
 
     :param lum: The luminance.
-    :param chroma: The chromasity.
-    :param effect: Scale of the function.
-    :param lum_scale: Weighted ratio for lum * chrom.
-    :param chrom_scale: Weighted ratio for lum * chrom.
-    :param func: Function for editing the luminance channel.
-    :return: The edited picture.
-    """
-    lum = edit_globally(lum, effect, func)
+    :type lum: Numpy array.
 
-    lum = lum * lum_scale
-    chroma = chroma * chrom_scale
+    :param chroma: The chromasity.
+    :type chroma: Numpy array.
+
+    :param effect: Config for the effects.
+    :type effect: EffectConfig class.
+
+    :return: The edited image.
+    """
+    lum = edit_globally(lum, effect.level, effect.func)
+
+    lum = lum * effect.lum_scale
+    chroma = chroma * effect.chrom_scale
 
     result = lum * chroma
     return result
 
 
-def edit_luminance(im, lum_scale=1, chrom_scale=1, effect=2, func="sqrt"):
+def split_image(im, effect):
     """
     This function splits the input image into chromasity and luminance.
 
     :param im: Input image.
-    :param effect: Scale of the function.
-    :param lum_scale: Weighted ratio for lum * chrom.
-    :param chrom_scale: Weighted ratio for lum * chrom.
-    :param func: Function for editing the luminance channel.
+    :type im: Numpy array.
+
+    :param effect: Config for the effects.
+    :type effect: EffectConfig class.
+
     :return: Output image.
     """
     lum = luminance(im)
     chroma = chromasity(im, lum)
-    return weighted_image(lum, chroma, lum_scale, chrom_scale, effect, func)
+    return edit_luminance(lum, chroma, effect)
 
 
 def compare(im1, im2):
     """
-    Helping function that takes two input images
+    Help function that takes two input images
         and prints out the difference between their pixel values.
 
-    :param im1: Input image 1
-    :param im2: Input image 2
+    :param im1: Input image 1.
+    :type im1: Numpy array.
+
+    :param im2: Input image 2.
+    :type im2: Numpy array.
+
     :return: Prints the difference between the images.
     """
     return print(im2-im1)
@@ -157,5 +176,5 @@ if __name__ == '__main__':
     edited = edit_globally(image, 2, "pow")
     show(edited)
 
-    split = edit_luminance(image, 2, 4, .1, "pow")
+    split = split_image(image, 2, 4, .1, "pow")
     show(split)
