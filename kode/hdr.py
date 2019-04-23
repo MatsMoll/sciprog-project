@@ -9,10 +9,12 @@ import matplotlib.pyplot as plt
 def standard_weighting(x):
     """
     A standard weighting function for hdr reconstruction
+
     :param x: The x value
+
     :return: The weighted value
     """
-    if x > 128:
+    if x >= 128:
         return 255 - x
     else:
         return x
@@ -21,10 +23,12 @@ def standard_weighting(x):
 def standard_weighting_vector(x):
     """
     A standard weighting function for hdr reconstruction
+
     :param x: The x value
+
     :return: The weighted value
     """
-    x[x > 128] = 255 - x[x > 128]
+    x[x > 127] = 256 - x[x > 127]
     return x
 
 
@@ -36,6 +40,7 @@ def hdr_channel(images, shutter, smoothness, weighting):
     :param shutter: log(shutter speed) or log(delta t) for each image j
     :param smoothness: The lambda, or a constant value that sets the smoothness
     :param weighting: The weighting function for a given value Z
+
     :return: A tuple containing log(exposure) for the pixel value Z and log(irradiance) for pixel i
     """
 
@@ -86,6 +91,7 @@ def hdr_color_channels(channels, shutter, smoothness):
     :param channels: The pixel values in a 3d array where i is the location and j is the image
     :param shutter: log(shutter speed) or log(delta t) for each image j
     :param smoothness: The lambda, or a constant value that sets the smoothness
+
     :return: A tuple containing log(exposure) for the pixel value Z and log(irradiance) for pixel i
     """
     result = []   # [[g_r(z), ln(E_r)], ..., [g_b(z), ln(E_b)]]
@@ -105,24 +111,26 @@ def hdr_color_channels(channels, shutter, smoothness):
 def reconstruct_image(channels, weighting, hdr_graph, shutter):
     """
     Reconstruct a image from a hdr graph
+
     :param channels: The different channels from the different images
     :param weighting: The weighting function
     :param hdr_graph: The HDR graph
     :param shutter: The ln(shutter) speeds for the different images
+
     :return: The hdr channel
     """
-    w_value = weighting(channels.copy())
+    w_value = weighting(channels.copy() + 1)
     denum_w = w_value.sum(0)
     denum_w[denum_w == 0] = 1
-    print("Denum:", denum_w.min(), denum_w.max())
-    print(channels.min(), channels.max())
     return np.exp((w_value * (hdr_graph[channels.astype(int)] - shutter[:, None, None])).sum(0) / denum_w)
 
 
 def find_reference_points_for(images):
     """
     Returns the indexes for a set of images
+
     :param images: The images to find references for of type images.ImageSet
+
     :return: The pixel indexes
     """
     channels = images.channels()
@@ -167,7 +175,9 @@ class ImageSet:
     def hdr_image(self, smoothness):
         """
         Generates a hdr image
+
         :param smoothness: The smoothness on the curve
+
         :return: The hdr image
         """
         channels = self.channels()
@@ -190,7 +200,7 @@ class ImageSet:
             output_image = reconstruct_image(
                 channels, standard_weighting_vector, curve[0], self.shutter_speed)
         else:
-            for i in range(0, channels.shape[0]):
+            for i in range(0, 3):
                 output_image[:, :, i] = reconstruct_image(
                     channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
         return output_image
@@ -198,7 +208,9 @@ class ImageSet:
     def hdr_curve(self, smoothness):
         """
         Generates a hdr curve for a image set
+
         :param smoothness: The smoothness on the curve
+
         :return: The hdr curve
         """
         return self.hdr_channels(find_reference_points_for(self), smoothness)
@@ -209,6 +221,7 @@ class ImageSet:
 
         :param pixel_index: The pixels to use as references
         :param smoothness: The amount of smoothing to do on the graph
+
         :return: The g lookup table and the ln_e.
         This will be an tuple if the images are of one dim and an array with tuples if there is more
         """
@@ -224,6 +237,7 @@ class ImageSet:
     def gray_images(self):
         """
         Converts the image set to grey images
+
         :return: A new set containing the grey images
         """
         if len(np.shape(self.images)) == 4:
@@ -237,6 +251,7 @@ class ImageSet:
     def channels(self):
         """
         Separates the different channels in the images
+
         :return: The channels
         """
         shape = np.shape(self.images)
@@ -255,6 +270,7 @@ def load_image(path):
     This loads an image
 
     :param path: The path to the image
+
     :return: a Image object
     """
     return np.array(imageio.imread(path))
@@ -263,6 +279,7 @@ def load_image(path):
 def test_image_set():
     """
     Creates a image set for testing
+
     :return: The ImageSet with the info
     """
     return ImageSet([
@@ -274,11 +291,13 @@ def test_image_set():
         ("../eksempelbilder/Balls Unaligned/Balls_00128.png", "00128"),
         ("../eksempelbilder/Balls Unaligned/Balls_00256.png", "00256"),
         ("../eksempelbilder/Balls Unaligned/Balls_00512.png", "00512"),
-        ("../eksempelbilder/Balls Unaligned/Balls_01024.png", "01024"),
-        ("../eksempelbilder/Balls Unaligned/Balls_02048.png", "02048"),
-        #("../eksempelbilder/Balls/Balls_", "04096"),
-        #("../eksempelbilder/Balls/Balls_", "08192"),
-        #("../eksempelbilder/Balls/Balls_", "16384"),
+        # ("../eksempelbilder/Balls/Balls_01024.png", "01024"),
+        # ("../eksempelbilder/Balls/Balls_02048.png", "02048"),
+        # ("../eksempelbilder/Balls/Balls_04096.png", "04096"),
+        # ("../eksempelbilder/Balls/Balls_08192.png", "08192"),
+        # ("../eksempelbilder/Balls/Balls_16384.png", "16384"),
+        # load_image("../eksempelbilder/Balls/Balls_", "01024"),
+        # load_image("../eksempelbilder/Balls/Balls_", "02048"),
     ])
 
 

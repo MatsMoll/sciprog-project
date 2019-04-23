@@ -9,127 +9,47 @@ from hdr import ImageSet
 
 def explicitly(n_points, n_time, initial_values, vector_values):
     """
-    :param n_points:
-    :param n_time:
-    :param initial_values:
-    :param vector_values:
+    Calculates the explicit solution for a partial differential equation
+
+    :param n_points: The number of iterations to calculate
+    :param n_time: The length to calculate
+    :param initial_values: The initial values
+    :param vector_values: The divergence of the equation
+
     :return: A image
     """
     delta_t = 1 / (n_time - 1)
     u = initial_values
     for n in range(0, n_points):
-        #vector_values = gradient_vector(luminance(u), n)
-        #print(u.max(), u.min())
-        #u = luminance(u) * (0.1 / vector_values) * (vector_values / 0.1) ** 0.85
-        u[1:-1, 1:-1] = delta_t * (u[2:, 1:-1] + u[:-2, 1:-1] + u[1:-1, 2:] + u[1:-1, :-2] - 4 * u[1:-1, 1:-1]) - delta_t * (vector_values[1:-1, 1:-1, 0] + vector_values[1:-1, 1:-1, 1]) + u[1:-1, 1:-1]
+        u[1:-1, 1:-1] = delta_t * (u[2:, 1:-1] + u[:-2, 1:-1] + u[1:-1, 2:] + u[1:-1, :-2] - 4 * u[1:-1, 1:-1]) \
+                        - delta_t * (vector_values[1:-1, 1:-1, 0] + vector_values[1:-1, 1:-1, 1]) + u[1:-1, 1:-1]
 
-    return u
-
-
-def phi(u, b, k):
-    """
-    Phi function that calculates the importance of a gradient
-    :param u: The image
-    :param b: A constant that weight large gradients
-    :param k: The image level in a gauss pyramid
-    :return:
-    """
-    u_diff = diff(u)
-    print(u_diff.min())
-    print(u_diff.max())
-    a = u_diff.mean()
-    return a / np.abs(u_diff) * (np.abs(u_diff) / a) ** b
-
-
-def phi_two(u, b, k):
-    u_diff = diff_two(u, k)
-    print(u_diff.min())
-    print(u_diff.max())
-    a = u_diff.mean()
-    return a / np.abs(u_diff) * (np.abs(u_diff) / a) ** b
-
-
-def diff(u):
-    u[1:-1, 1:-1] = u[2:, 1:-1] + u[:-2, 1:-1] + u[1:-1, 2:] + u[1:-1, :-2] - 4 * u[1:-1, 1:-1]
     return u
 
 
 def diff_two(u):
+    """
+    Calculates the change of a pixel value in both x and y axis
+
+    :param u: The image to use
+
+    :return: A matrix containing the change in x an y directions
+    """
     g = np.zeros(u.shape + (2,))
-    print(g.shape)
     g[1:-1, :, 0] = u[2:, :] - u[1:-1, :]
     g[:, 1:-1, 1] = u[:, 2:] - u[:, 1:-1]
     return g
 
 
-def images(original):
-
-    shape = np.shape(original)
-
-    images = [original]
-    lowest_res = original
-
-    while images[-1].shape[0] * images[-1].shape[1] > 32 * 4:
-        print("New: ", shape, (int(shape[0] / 2), int(shape[1] / 2)))
-        lowest_res = pyrDown(lowest_res)
-        shape = np.shape(lowest_res)
-        images.append(lowest_res)
-
-    diffs = [phi(images[0], 0.8, len(images) - 1)]
-
-    for i in range(1, len(images) - 1):
-        print(i)
-        shape = images[len(images) - 2 - i].shape
-
-        up = pyrUp(diffs[i - 1])
-        new_im = phi(images[len(images) - 2 - i], 0.8, len(images) - 2 - i) * up[:shape[0], :shape[1]]
-        diffs.append(new_im)
-        #diffs.append(pyrUp(diffs[i - 1]) * phi(images[len(images) - 1 - i], 0.1, 0.8))
-
-    return diffs
-    #return np.sqrt(diffs[-1][:, :, 0] ** 2 + diffs[-1][:, :, 1] ** 2)
-
-
-def images_two(original):
-
-    shape = original.shape
-
-    images = [original]
-    lowest_res = original
-
-    while images[-1].shape[0] * images[-1].shape[1] > 32 * 4:
-        print("New: ", shape, (int(shape[0] / 2), int(shape[1] / 2)))
-        lowest_res = pyrDown(lowest_res)
-        shape = np.shape(lowest_res)
-        images.append(lowest_res)
-
-    diffs = [phi_two(images[0], 0.8, len(images) - 1)]
-    shape = original.shape
-
-    for i in range(1, len(images) - 1):
-        print(i)
-        up = images[i]
-        for j in range(0, i):
-            print("Changeing", up.shape)
-            up = pyrUp(up)
-
-        print(up.shape)
-        print(diffs[-1].shape)
-        new_im = phi_two(up[:shape[0], :shape[1]], 0.8, i) * diffs[-1]
-        diffs.append(new_im)
-        #diffs.append(pyrUp(diffs[i - 1]) * phi(images[len(images) - 1 - i], 0.1, 0.8))
-
-    #return diffs
-    return [np.sqrt(diffs[-1][:, :, 0] ** 2 + diffs[-1][:, :, 1] ** 2)]
-
-
-def compress(original, func, initial_value=None):
+def compress_gradient(original, func, initial_value=None):
     """
     Compresses the length of the gradient vector and returns a new image
     based on this new vector
+
     :param original: The image to compress
     :param func: The function to use when compressing the length
     :param initial_value: The initial value to use when finding the new image. Will use the original if this is None
+
     :return: A new image fitting the compressed vector
     """
     du_0_len, du_0 = gradient_vectors(original)
@@ -139,7 +59,7 @@ def compress(original, func, initial_value=None):
 
     f_du = f_du_len[:, :, None] * du_0 / du_0_len[:, :, None]
 
-    div_f = div_matrix(f_du)
+    div_f = divergence_matrix(f_du)
 
     if initial_value is None:
         return explicitly(10, 10, original, div_f)
@@ -147,7 +67,15 @@ def compress(original, func, initial_value=None):
         return explicitly(10, 10, initial_value, div_f)
 
 
-def compress_pyr(original, func):
+def compress_gradient_pyr(original, func):
+    """
+    Compresses the gradient vector in the same way as `compress_gradient`, but using a Gaussian pyramid
+
+    :param original: The luminace of the image to compress as a numpy matrix
+    :param func: The function to use when compressing the length
+
+    :return: The new image / luminace
+    """
 
     shape = original.shape
 
@@ -155,7 +83,6 @@ def compress_pyr(original, func):
     lowest_res = original
 
     while images[-1].shape[0] * images[-1].shape[1] > 32 * 4:
-        print("New: ", shape, (int(shape[0] / 2), int(shape[1] / 2)))
         lowest_res = pyrDown(lowest_res)
         shape = np.shape(lowest_res)
         images.append(lowest_res)
@@ -164,31 +91,39 @@ def compress_pyr(original, func):
     for i in range(1, len(images) + 1):
         lum = images[-i]
 
-        print(images[-i].shape)
-        print(initial_value.shape)
-
         if initial_value.shape != images[-i].shape[0:-1]:
             initial_value = resize(pyrUp(initial_value), tuple(reversed(lum.shape)))
-            print(lum.shape)
-            print("Upscaled", initial_value.shape)
 
-        initial_value = compress(lum, func, initial_value=initial_value)
-
-        #initial_value = (images[-i] / lum[:, :]) ** 1 * compressed
+        initial_value = compress_gradient(lum, func, initial_value=initial_value)
 
     return initial_value
 
 
-def div_matrix(matrix):
+def divergence_matrix(matrix):
+    """
+    Calculates the divergence of a matrix
+
+    :param matrix: The matrix
+
+    :return: The divergence matrix
+    """
     div_f = np.zeros(matrix.shape)
     div_f[1:-1, :, 0] = matrix[1:-1, :, 0] - matrix[:-2, :, 0]
     div_f[:, 1:-1, 1] = matrix[:, 1:-1, 1] - matrix[:, :-2, 1]
+    div_f[:, 0, 1] = matrix[:, 0, 1]
     plt.imshow(np.sqrt(div_f[:, :, 0] ** 2 + div_f[:, :, 1] ** 2), plt.cm.gray)
     plt.show()
     return div_f
 
 
 def gradient_vectors(image):
+    """
+    Calculates the gradient vector and length of a image
+
+    :param image: The image to calculate for
+
+    :return: A tuple containing the length and vector
+    """
     du_0 = diff_two(image)
     du_0_len = np.sqrt(du_0[:, :, 0] ** 2 + du_0[:, :, 1] ** 2)
     return du_0_len, du_0
@@ -199,30 +134,34 @@ if __name__ == '__main__':
     import imageio
     from hdr import load_image
 
-    #t = imageio.imread("../eksempelbilder/MtTamNorth/MtTamNorth.exr")
+    #t = imageio.imread("../eksempelbilder/Balls/Balls.exr")
 
     test_im_set = color_images = ImageSet([
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00001.png", "00001"),
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00004.png", "00004"),
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00016.png", "00016"),
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00032.png", "00032"),
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00064.png", "00064"),
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00128.png", "00128"),
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00256.png", "00256"),
-        ("../eksempelbilder/MtTamNorth/MtTamNorth_00512.png", "00512"),
-        #("../eksempelbilder/MtTamNorth/MtTamNorth_01024.png", "01024"),
-        #("../eksempelbilder/MtTamNorth/MtTamNorth_02048.png", "02048"),
-        #("../eksempelbilder/MtTamNorth/MtTamNorth_04096.png", "04096"),
-        #("../eksempelbilder/MtTamNorth/MtTamNorth_08192.png", "08192"),
-        #("../eksempelbilder/MtTamNorth/MtTamNorth_16384.png", "16384"),
-        # load_image("../eksempelbilder/MtTamNorth/MtTamNorth_", "01024"),
-        # load_image("../eksempelbilder/MtTamNorth/MtTamNorth_", "02048"),
+        ("../eksempelbilder/Tree/Tree_00001.png", "00001"),
+        ("../eksempelbilder/Tree/Tree_00004.png", "00004"),
+        ("../eksempelbilder/Tree/Tree_00016.png", "00016"),
+        ("../eksempelbilder/Tree/Tree_00032.png", "00032"),
+        ("../eksempelbilder/Tree/Tree_00064.png", "00064"),
+        ("../eksempelbilder/Tree/Tree_00128.png", "00128"),
+        ("../eksempelbilder/Tree/Tree_00256.png", "00256"),
+        ("../eksempelbilder/Tree/Tree_00512.png", "00512"),
+        #("../eksempelbilder/Tree/Tree_01024.png", "01024"),
+        #("../eksempelbilder/Tree/Tree_02048.png", "02048"),
+        #("../eksempelbilder/Tree/Tree_04096.png", "04096"),
+        #("../eksempelbilder/Tree/Tree_08192.png", "08192"),
+        #("../eksempelbilder/Tree/Tree_16384.png", "16384"),
     ])
-    test_im = test_im_set.hdr_image(10) ** 0.2
+    test_im = test_im_set.hdr_image(10)
+
+    for image in test_im_set.images:
+        plt.imshow(image)
+        plt.show()
+
+    gamma_im = test_im ** 0.2
 
     test_im = (test_im - test_im.min()) / (test_im.max() - test_im.min())
 
-    plt.imshow(test_im)
+    plt.imshow((gamma_im - gamma_im.min()) / (gamma_im.max() - gamma_im.min()))
     plt.show()
 
     plt.imshow(test_im.sum(2) / 3, plt.cm.gray)
@@ -234,9 +173,8 @@ if __name__ == '__main__':
     print(lum_im.min())
     print(lum_im.shape)
 
-    #pyr = np.exp(compress(np.log(lum_im.copy()), np.sqrt))
-    pyr = np.exp(compress_pyr(np.log(lum_im.copy()), lambda x: x ** 0.8))
-
+    #pyr = np.exp(compress_gradient(np.log(lum_im.copy()), lambda x: x ** 0.8))
+    pyr = np.exp(compress_gradient_pyr(np.log(lum_im.copy()), lambda x: x ** 0.8))
     print(test_im.shape)
     print(lum_im.shape)
     print(pyr.shape)
@@ -246,6 +184,7 @@ if __name__ == '__main__':
     print(pyr.min())
 
     test_im_reconstruct = (test_im[:, :, :] / lum_im[:, :, None]) ** 1 * pyr[:, :, None]
+    test_im_reconstruct = test_im_reconstruct ** 0.2
 
     #for image in pyr:
     plt.imshow((pyr - pyr.min())/(pyr.max() - pyr.min()), plt.cm.gray)
