@@ -125,7 +125,6 @@ class App(QWidget):
         """
         self.edited_image = self.original_image_set.images[0].copy() / 255
         if self.hdr_image is not None:
-            print("HDR-Image")
             self.edited_image = self.hdr_image.copy()
 
         for filter_widget in self.filter_widgets:

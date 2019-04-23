@@ -16,20 +16,17 @@ def align_image_set(image_set):
     aligned_set = image_set.images.copy()
 
     for i in range(1, image_set.images.shape[0]):
-        aligned_set[i] = align_images(image_set.images[i], aligned_set[i - 1])[0]
-
-    for image in aligned_set:
-        plt.imshow(image)
-        plt.show()
+        if np.std(image_set.images[i]) > 20:
+            aligned_set[i] = align_images(image_set.images[i], aligned_set[i - 1])[0]
+        else:
+            print("To low detail in order to align images")
+            break
 
     cropped_image = crop_image_set(aligned_set)
 
     aligned_image_set = ImageSet(cropped_image)
     aligned_image_set.shutter_speed = image_set.shutter_speed.copy()
     aligned_image_set.original_shape = cropped_image.shape[1:]
-
-    print(image_set.original_shape)
-    print(aligned_image_set.original_shape)
 
     return aligned_image_set
 
@@ -47,15 +44,8 @@ def align_images(im_one, im_two):
     max_features = 500
     good_match_percent = 0.2
 
-    if np.any(im_one > 1):
-        im_one = im_one.astype(np.uint8)
-    else:
-        im_one = im_one.astype(np.float32)
-
-    if np.any(im_two > 1):
-        im_two = im_two.astype(np.uint8)
-    else:
-        im_two = im_two.astype(np.float32)
+    im_one = im_one.astype(np.uint8)
+    im_two = im_two.astype(np.uint8)
 
     im1Gray = None
     im2Gray = None
@@ -109,7 +99,7 @@ def crop_image_set(images):
     """
     Crops a image based on the alpha channel
 
-    This uses the assumption that the alpa is only in the corner or as a border
+    This uses the assumption that the alpha is only in the corner or as a border
 
     :param images: The image set to crop
     :return: The cropped image
@@ -120,7 +110,10 @@ def crop_image_set(images):
     y_2 = images.shape[1] - 1
 
     alpha_channel = images
-    if images.ndim > 3:
+
+    if images.shape[-1] < 4:  # no alpha
+        return images
+    elif images.ndim > 3:
         alpha_channel = images[:, :, :, -1]
 
     while not np.all(alpha_channel[:, y_1, x_1] > 0):
