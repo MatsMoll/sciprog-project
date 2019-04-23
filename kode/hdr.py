@@ -157,8 +157,10 @@ class ImageSet:
                     self.images = np.array([load_image(path)])
                 else:
                     self.images = np.append(self.images, [load_image(path)], axis=0)
-            self.original_shape = np.shape(self.images[0])
-            self.shutter_speed = np.array(self.shutter_speed)
+
+            if len(images) != 0:
+                self.original_shape = np.shape(self.images[0])
+                self.shutter_speed = np.array(self.shutter_speed)
             #self.images[self.images <= 0] = 1
 
             #shutter_base = (self.images[1] / self.images[0]).mean()

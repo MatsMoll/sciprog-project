@@ -29,15 +29,14 @@ class App(QWidget):
         self.width = 1000
         self.height = 600
         self.main_image = PlotCanvas(width=5, height=4)
-        self.original_image_set = ImageSet(
-            [("../eksempelbilder/Balls/Balls_01024.png", "01024")]
-        )
+        self.original_image_set = ImageSet([])
         self.edited_image = None
         self.hdr_image = None
         self.filter_widgets = list()
         self.filter_layout = QVBoxLayout()
         self.add_global_filter_button = QPushButton("Add global filter", self)
         self.add_lum_filter_button = QPushButton("Add Lum filter", self)
+        self.status_label = QLabel("Ingen bilder er lastet inn")
         self.init_ui()
 
     def init_ui(self):
@@ -47,9 +46,7 @@ class App(QWidget):
         self.setup_image()
         self.filter_layout = QVBoxLayout()
 
-        group_box = QGroupBox("Settings")
-
-        open_image_button = QPushButton("Create HDR", self)
+        open_image_button = QPushButton("Last inn bilde (velg flere for HDR-rekonstruksjon)", self)
         open_image_button.clicked.connect(self.select_file)
 
         self.add_global_filter_button.clicked.connect(self.add_global_filter)
@@ -58,40 +55,54 @@ class App(QWidget):
         self.add_lum_filter_button.clicked.connect(self.add_lum_filter)
         self.add_lum_filter_button.setEnabled(False)
 
+        self.status_label.setStyleSheet("background: orange")
+        self.status_label.setContentsMargins(10, 3, 10, 3)
+
         button_layout = QVBoxLayout()
+        button_layout.addWidget(self.status_label)
         button_layout.addWidget(open_image_button)
         button_layout.addWidget(self.add_global_filter_button)
         button_layout.addWidget(self.add_lum_filter_button)
-        button_layout.addLayout(self.filter_layout)
-        button_layout.addStretch()
         button_layout.setAlignment(Qt.AlignCenter)
 
+        group_box = QGroupBox("Instillinger")
         group_box.setLayout(button_layout)
+        group_box.setMaximumWidth(400)
+
+        self.filter_layout.addStretch()
 
         scroll = QScrollArea()
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setWidgetResizable(True)
-        scroll.setWidget(group_box)
-        scroll.setMaximumWidth(400)
+        scroll.setLayout(self.filter_layout)
+
+        scroll_layout = QVBoxLayout()
+        scroll_layout.addWidget(scroll)
+
+        filter_box = QGroupBox("Filter")
+        filter_box.setLayout(scroll_layout)
+        filter_box.setMaximumWidth(400)
+
+        action_layout = QVBoxLayout()
+        action_layout.addWidget(group_box)
+        action_layout.addWidget(filter_box)
 
         main_layout = QHBoxLayout()
         main_layout.setAlignment(Qt.AlignLeading)
         main_layout.addWidget(self.main_image)
-        main_layout.addWidget(scroll)
+        main_layout.addLayout(action_layout)
 
         self.setLayout(main_layout)
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.show()
-        self.update_image_with_filter()
 
     def setup_image(self):
         """
         Setup the image GUI
         """
         self.main_image = PlotCanvas(width=5, height=4)
-        self.main_image.plot_image(self.original_image_set.images[0])
 
     def add_global_filter(self):
         """
@@ -140,16 +151,24 @@ class App(QWidget):
         Selects a set of files and generates a HDR image
         :return:
         """
-        file_name, ok = QFileDialog.getOpenFileNames(self, "Velg bilde", "", "PNG (*.png)")
+        file_name, ok = QFileDialog.getOpenFileNames(self, "Velg bilde", "", "PNG (*.png);;EXR (*.exr)")
 
         if ok:
             # Filename and shutter
             self.add_global_filter_button.setEnabled(True)
             self.add_lum_filter_button.setEnabled(True)
             image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
-            self.original_image_set = align_image_set(ImageSet(image_info))
-            self.hdr_image = self.original_image_set.hdr_image(10)
-            self.update_image_with_filter()
+
+            try:
+                self.original_image_set = align_image_set(ImageSet(image_info))
+                self.hdr_image = self.original_image_set.hdr_image(10)
+                self.update_image_with_filter()
+                self.status_label.setText("Bilde ble lastet inn")
+                self.status_label.setStyleSheet("background: green")
+            except:
+                self.status_label.setText("Ups! Det skjedde en feil ved innlasting av bildet")
+                self.status_label.setStyleSheet("background: red")
+
 
 
 class SliderWidget(QWidget):
