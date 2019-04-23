@@ -7,7 +7,7 @@ import numpy as np
 import scipy.ndimage as ndimage
 import cv2
 import globalHDR
-from filter_config import FilterImageConfig, EffectConfig, BlurImageConfig
+from filter_config import FilterImageConfig
 
 
 def has_alpha(im):
@@ -98,14 +98,15 @@ def edit_blurred_image(blurry_im, effect):
     :return: Edited, blurred image.
     """
     if effect.mode == "global":
-        blurry_im_edited = globalHDR.edit_globally(blurry_im, effect)
+        return globalHDR.edit_globally(blurry_im, effect)
+    elif effect.mode == "luminance":
+        return globalHDR.edit_luminance(blurry_im, effect)
     else:
-        blurry_im_edited = globalHDR.edit_luminance(blurry_im, effect)
-    # globalHDR.show(blurry_im_edited)
-    return blurry_im_edited
+        print("Unavailable mode:", effect.mode, "\n-> Returned input image.")
+        return blurry_im
 
 
-def reconstruct_image(detail_im, blurry_im, filter):
+def reconstruct_image(detail_im, blurry_im, filters):
     """
     Reconstructs the image with a given weight from filter config.
     These parameters are customizable through the GUI.
@@ -116,18 +117,18 @@ def reconstruct_image(detail_im, blurry_im, filter):
     :param blurry_im: Blurred part of the original image.
     :type blurry_im: Numpy array.
 
-    :param filter: Config for the filtering.
-    :type filter: FilterImageConfig class.
+    :param filters: Config for the filtering.
+    :type filters: FilterImageConfig class.
 
     :return: Reconstructed image.
     """
     if detail_im.shape == blurry_im.shape:
-        reconstructed = detail_im * filter.gamma + blurry_im
+        return detail_im * filters.gamma + blurry_im
     else:
         reconstructed = np.zeros(blurry_im.shape)
         for i in range(0, blurry_im.ndim):
-            reconstructed[:, :, i] = detail_im * filter.gamma + blurry_im[:, :, i]
-    return reconstructed
+            reconstructed[:, :, i] = detail_im * filters.gamma + blurry_im[:, :, i]
+        return reconstructed
 
 
 def append_channel(im, channel):
@@ -145,7 +146,7 @@ def append_channel(im, channel):
     return np.dstack((im, channel))
 
 
-def filter_image(im, filter):
+def filter_image(im, filters):
     """
     Filters the blurred and detailed parts of the image,
         edits the blurred parts and puts it back together.
@@ -162,8 +163,8 @@ def filter_image(im, filter):
     :param im: Input image.
     :type im: Numpy array.
 
-    :param filter: Config for the filtering.
-    :type filter: FilterImageConfig class.
+    :param filters: Config for the filtering.
+    :type filters: FilterImageConfig class.
 
     :return:
     """
@@ -172,10 +173,10 @@ def filter_image(im, filter):
     if alpha_exist:
         im, alpha = extract_alpha(im)
 
-    blurry_im = blur_image(im, filter.blur)
+    blurry_im = blur_image(im, filters.blur)
     detail_im = find_details(im, blurry_im)
-    blurry_im_edited = edit_blurred_image(blurry_im, filter.effect)
-    filtered_im = reconstruct_image(detail_im, blurry_im_edited, filter)
+    blurry_im_edited = edit_blurred_image(blurry_im, filters.effect)
+    filtered_im = reconstruct_image(detail_im, blurry_im_edited, filters)
 
     if alpha_exist:
         filtered_im = append_channel(filtered_im, alpha)
@@ -203,4 +204,3 @@ if __name__ == '__main__':
     nonlinear_im_config.blur.linear = False
     nonlinear_im = filter_image(input_im, nonlinear_im_config)
     globalHDR.show(nonlinear_im)
-
