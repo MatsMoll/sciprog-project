@@ -2,6 +2,7 @@
 A module that provides attributes to simplifies function calls in 'globalHDR.py' and 'localHDR.py'.
 """
 
+
 class BlurImageConfig:
     """
     A class providing the blur configuration.
@@ -73,3 +74,30 @@ class FilterImageConfig:
     blur = BlurImageConfig()
     effect = EffectConfig()
     gamma = 1
+
+
+class GradientFilterConfig:
+    """
+    A class providing the filtering for gradient compression.
+
+    :attr saturation: The saturation
+    :type saturation: Float
+
+    :attr iteration_amount: The number of iterations in the gradient descent
+    :type iteration_amount: Int
+
+    :attr iteration_distance: The the length to travel when descending
+    :type iteration_distance: Int
+
+    :attr use_pyramid: Should use a gaussian pyramid or not
+    :type use_pyramid: Bool
+
+    :attr func: Should use a gaussian pyramid or not
+    :type func: Function
+    """
+
+    saturation = 1
+    iteration_amount = 5
+    iteration_distance = 5
+    use_pyramid = False
+    func = lambda x: x
