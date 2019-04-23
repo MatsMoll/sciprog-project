@@ -1,7 +1,8 @@
 """
 A module simplifying the hdr calculations
 """
-from hdr import *
+import numpy as np
+import hdr
 from align_image import align_images
 
 
@@ -39,11 +40,11 @@ class ImageSet:
                 self.shutter_speed.append(np.log(float(shutter)))
 
                 if self.images.size == 0:
-                    self.images = np.array([load_image(path)])
+                    self.images = np.array([hdr.load_image(path)])
                 else:
-                    self.images = np.append(self.images, [load_image(path)], axis=0)
+                    self.images = np.append(self.images, [hdr.load_image(path)], axis=0)
 
-            if len(images) != 0:
+            if images:
                 self.original_shape = np.shape(self.images[0])
                 self.shutter_speed = np.array(self.shutter_speed)
             #self.images[self.images <= 0] = 1
@@ -85,12 +86,12 @@ class ImageSet:
 
         output_image = np.zeros(self.original_shape[:-1] + (3,))
         if channels.ndim == 3:
-            output_image = reconstruct_image(
-                channels, standard_weighting_vector, curve[0], self.shutter_speed)
+            output_image = hdr.reconstruct_image(
+                channels, hdr.standard_weighting_vector, curve[0], self.shutter_speed)
         else:
             for i in range(0, 3):
-                output_image[:, :, i] = reconstruct_image(
-                    channels[i], standard_weighting_vector, curve[i][0], self.shutter_speed)
+                output_image[:, :, i] = hdr.reconstruct_image(
+                    channels[i], hdr.standard_weighting_vector, curve[i][0], self.shutter_speed)
         return output_image
 
     def hdr_curve(self, smoothness):
@@ -102,7 +103,7 @@ class ImageSet:
 
         :return: The hdr curve
         """
-        return self.hdr_channels(find_reference_points_for(self), smoothness)
+        return self.hdr_channels(hdr.find_reference_points_for(self), smoothness)
 
     def hdr_channels(self, pixel_index, smoothness):
         """
@@ -121,10 +122,10 @@ class ImageSet:
         shape = np.shape(chan)
         if len(shape) == 3:
             chan = chan.reshape((shape[0], shape[1] * shape[2]))
-            return hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness, standard_weighting)
+            return hdr.hdr_channel(chan[:, pixel_index], self.shutter_speed, smoothness, hdr.standard_weighting)
         else:
             chan = chan.reshape((shape[0], shape[1], shape[2] * shape[3]))
-            return hdr_color_channels(chan[:, :, pixel_index], self.shutter_speed, smoothness)
+            return hdr.hdr_color_channels(chan[:, :, pixel_index], self.shutter_speed, smoothness)
 
     def gray_images(self):
         """

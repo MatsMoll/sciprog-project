@@ -4,7 +4,6 @@ A module that compress the gradient of an image
 import numpy as np
 from cv2 import pyrUp, pyrDown, resize
 from globalHDR import luminance
-from image_set import ImageSet
 
 
 def explicitly(n_points, n_time, initial_values, vector_values):
@@ -146,6 +145,7 @@ def gradient_vectors(image_matrix):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    from image_set import ImageSet
 
     test_im_set = color_images = ImageSet([
         ("../eksempelbilder/Tree/Tree_00001.png", "00001"),
