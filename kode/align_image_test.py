@@ -4,7 +4,7 @@ Testsing the align_image.py file
 import unittest
 import numpy as np
 import align_image
-from hdr import ImageSet
+from image_set import ImageSet
 
 
 class AlignImageTests(unittest.TestCase):
@@ -22,7 +22,7 @@ class AlignImageTests(unittest.TestCase):
         input_im[1, -3:, :, -1] = 0
         input_im[3, -1:, -3:, -1] = 0
         expected_im = input_im[:, :-3, :-3, :]
-        output_im = align_image.crop_image_set(input_im)
+        output_im = align_image.crop_images(input_im)
         self.assertTrue(np.array_equal(expected_im, output_im))
 
     def test_alignment_function(self):
@@ -32,7 +32,7 @@ class AlignImageTests(unittest.TestCase):
         first_input_im = np.random.rand(225, 225, 3) * 255
         second_input_im = np.rot90(first_input_im)
         expected_im = first_input_im.astype(np.uint8)
-        output_im, _ = align_image.align_images(second_input_im, first_input_im)
+        output_im, _ = align_image.align_image_pair(second_input_im, first_input_im)
         self.assertTrue(np.array_equal(expected_im, output_im))
 
     def test_alignment(self):
@@ -57,7 +57,7 @@ class AlignImageTests(unittest.TestCase):
         expected_im_set.original_shape = (222, 222, 4)
         expected_im_set.shutter_speed = input_im_set.shutter_speed.copy()
 
-        output_image_set = align_image.align_image_set(input_im_set)
+        output_image_set = input_im_set.aligned_image_set()
 
         self.assertEqual(expected_im_set.original_shape, output_image_set.original_shape)
         self.assertTrue(np.array_equal(expected_im_set.shutter_speed, output_image_set.shutter_speed))

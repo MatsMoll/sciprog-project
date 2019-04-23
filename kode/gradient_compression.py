@@ -4,7 +4,7 @@ A module that compress the gradient of an image
 import numpy as np
 from cv2 import pyrUp, pyrDown, resize
 from globalHDR import luminance
-from hdr import ImageSet
+from image_set import ImageSet
 
 
 def explicitly(n_points, n_time, initial_values, vector_values):
@@ -12,9 +12,16 @@ def explicitly(n_points, n_time, initial_values, vector_values):
     Calculates the explicit solution for a partial differential equation
 
     :param n_points: The number of iterations to calculate
+    :type n_points: int
+
     :param n_time: The length to calculate
+    :type n_time: int
+
     :param initial_values: The initial values
+    :type initial_values: Numpy array
+
     :param vector_values: The divergence of the equation
+    :type vector_values: Numpy array
 
     :return: A image
     """
@@ -32,6 +39,7 @@ def diff_two(u):
     Calculates the change of a pixel value in both x and y axis
 
     :param u: The image to use
+    :type u: Numpy array
 
     :return: A matrix containing the change in x an y directions
     """
@@ -47,8 +55,13 @@ def compress_gradient(original, func, initial_value=None):
     based on this new vector
 
     :param original: The image to compress
+    :type original: Numpy array
+
     :param func: The function to use when compressing the length
+    :type func: Function
+
     :param initial_value: The initial value to use when finding the new image. Will use the original if this is None
+    :type initial_value: Numpy array or None
 
     :return: A new image fitting the compressed vector
     """
@@ -71,8 +84,11 @@ def compress_gradient_pyr(original, func):
     """
     Compresses the gradient vector in the same way as `compress_gradient`, but using a Gaussian pyramid
 
-    :param original: The luminace of the image to compress as a numpy matrix
+    :param original: The luminace of the image to compress
+    :type original: Numpy array
+
     :param func: The function to use when compressing the length
+    :type func: Function
 
     :return: The new image / luminace
     """
@@ -101,6 +117,7 @@ def divergence_matrix(matrix):
     Calculates the divergence of a matrix
 
     :param matrix: The matrix
+    :type matrix: Numpy array
 
     :return: The divergence matrix
     """
@@ -118,6 +135,7 @@ def gradient_vectors(image_matrix):
     Calculates the gradient vector and length of a image
 
     :param image_matrix: The image to calculate for
+    :type image_matrix: Numpy array
 
     :return: A tuple containing the length and vector
     """

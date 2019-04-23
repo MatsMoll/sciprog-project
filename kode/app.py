@@ -11,9 +11,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
-from hdr import ImageSet
-from globalHDR import edit_luminance, edit_globally
-from align_image import align_image_set
+from globalHDR import edit_luminance, edit_globally, read_image
+from image_set import ImageSet
 
 
 class App(QWidget):
@@ -23,19 +22,15 @@ class App(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.left = 10
-        self.top = 10
         self.title = 'Stimat'
-        self.width = 1000
-        self.height = 600
         self.main_image = PlotCanvas(width=5, height=4)
         self.original_image_set = ImageSet([])
         self.edited_image = None
         self.hdr_image = None
         self.filter_widgets = list()
         self.filter_layout = QVBoxLayout()
-        self.add_global_filter_button = QPushButton("Add global filter", self)
-        self.add_lum_filter_button = QPushButton("Add Lum filter", self)
+        self.add_global_filter_button = QPushButton("Legg til globalt filter", self)
+        self.add_lum_filter_button = QPushButton("Legg til luminans filter", self)
         self.status_label = QLabel("Ingen bilder er lastet inn")
         self.init_ui()
 
@@ -71,22 +66,19 @@ class App(QWidget):
 
         self.filter_layout.addStretch()
 
+        filter_box = QGroupBox("Filter")
+        filter_box.setLayout(self.filter_layout)
+
         scroll = QScrollArea()
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setWidgetResizable(True)
-        scroll.setLayout(self.filter_layout)
-
-        scroll_layout = QVBoxLayout()
-        scroll_layout.addWidget(scroll)
-
-        filter_box = QGroupBox("Filter")
-        filter_box.setLayout(scroll_layout)
-        filter_box.setMaximumWidth(400)
+        scroll.setWidget(filter_box)
+        scroll.setMaximumWidth(400)
 
         action_layout = QVBoxLayout()
         action_layout.addWidget(group_box)
-        action_layout.addWidget(filter_box)
+        action_layout.addWidget(scroll)
 
         main_layout = QHBoxLayout()
         main_layout.setAlignment(Qt.AlignLeading)
@@ -95,7 +87,6 @@ class App(QWidget):
 
         self.setLayout(main_layout)
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
         self.show()
 
     def setup_image(self):
@@ -116,14 +107,16 @@ class App(QWidget):
         """
         Adds a filter to the layout
         """
-        new_filter = LumimanceFiltereWidget(self.update_image_with_filter, self.remove_filter)
+        new_filter = LumimanceFilterWidget(self.update_image_with_filter, self.remove_filter)
         self.filter_widgets.append(new_filter)
         self.filter_layout.addWidget(new_filter)
 
     def remove_filter(self, filter_widget):
         """
         Removes a filter widget
+
         :param filter_widget: The filter widget to remove
+        :type filter_widget: QWidget
         """
         filter_widget.deleteLater()
         self.filter_layout.removeWidget(filter_widget)
@@ -141,34 +134,34 @@ class App(QWidget):
         for filter_widget in self.filter_widgets:
             self.edited_image = filter_widget.apply_filter(self.edited_image)
 
-        #self.edited_image[self.edited_image > 1] = 1
-        #self.edited_image[self.edited_image < 0] = 0
         scaled_image = (self.edited_image - self.edited_image.min())/(self.edited_image.max() - self.edited_image.min())
         self.main_image.plot_image(scaled_image)
 
     def select_file(self):
         """
         Selects a set of files and generates a HDR image
-        :return:
         """
         file_name, ok = QFileDialog.getOpenFileNames(self, "Velg bilde", "", "PNG (*.png);;EXR (*.exr)")
 
         if ok:
-            # Filename and shutter
             self.add_global_filter_button.setEnabled(True)
             self.add_lum_filter_button.setEnabled(True)
-            image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
 
             try:
-                self.original_image_set = align_image_set(ImageSet(image_info))
-                self.hdr_image = self.original_image_set.hdr_image(10)
+                if file_name[0].endswith(".exr"):
+                    self.original_image_set = None
+                    self.hdr_image = read_image(file_name)
+                else:
+                    image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
+                    self.original_image_set = ImageSet(image_info).aligned_image_set()
+                    self.hdr_image = self.original_image_set.hdr_image(10)
+
                 self.update_image_with_filter()
                 self.status_label.setText("Bilde ble lastet inn")
                 self.status_label.setStyleSheet("background: green")
             except:
                 self.status_label.setText("Ups! Det skjedde en feil ved innlasting av bildet")
                 self.status_label.setStyleSheet("background: red")
-
 
 
 class SliderWidget(QWidget):
@@ -308,6 +301,7 @@ class FilterWidget(QWidget):
     def effect_value(self):
         """
         Calculates the slider value
+
         :return: The value of the slider
         """
         return self.effect_slider.value()
@@ -341,7 +335,10 @@ class FilterWidget(QWidget):
     def apply_filter(self, image):
         """
         Apply a filter to a image
+
         :param image: The image to apply the filter on
+        :type image: Numpy array
+
         :return: A new image with the filter on
         """
         filter_name = self.filter_options[self.selected_filter_index]
@@ -352,13 +349,13 @@ class FilterWidget(QWidget):
             return image
 
 
-class LumimanceFiltereWidget(FilterWidget):
+class LumimanceFilterWidget(FilterWidget):
     """
     A Widget that presents a filter setting
     """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
-        super(LumimanceFiltereWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
+        super(LumimanceFilterWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
         self.luminance_slider = SliderWidget(value_did_change_function, "Luminance")
         self.chromasity_slider = SliderWidget(value_did_change_function, "Chromasity")
         self.effect_layout.addWidget(self.luminance_slider)
@@ -379,7 +376,10 @@ class LumimanceFiltereWidget(FilterWidget):
     def apply_filter(self, image):
         """
         Apply a filter to a image
+
         :param image: The image to apply the filter on
+        :type image: Numpy array
+
         :return: A new image with the filter on
         """
         filter_name = self.filter_options[self.selected_filter_index]
@@ -395,12 +395,15 @@ class PlotCanvas(FigureCanvas):
     A Widget view that presents a plot or image
     """
 
-    def __init__(self, parent=None, width=10, height=10, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
+    current_figure = None
+    axes = None
 
-        FigureCanvas.__init__(self, fig)
-        fig.patch.set_facecolor("none")
+    def __init__(self, parent=None, width=10, height=10, dpi=100):
+        self.current_figure = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self.current_figure.add_subplot(111)
+
+        FigureCanvas.__init__(self, self.current_figure)
+        self.current_figure.patch.set_facecolor("none")
         self.setStyleSheet("background-color:rgba(0, 0, 0, 0)")
         self.setParent(parent)
 
@@ -413,29 +416,49 @@ class PlotCanvas(FigureCanvas):
     def plot_graph(self, x_axis, y_axis, title=""):
         """
         Plots a graph in the view
+
         :param x_axis: The x-axis to display
+        :type x_axis: Numpy array
+
         :param y_axis: The y-axis to display
+        :type y_axis: Numpy array
+
         :param title: The title to display
+        :type title: str
         """
-        fig = self.figure.add_subplot(111)
-        fig.plot(x_axis, y_axis)
-        fig.set_title(title)
+        self.clear_figure()
+        self.current_figure = self.figure.add_subplot(111)
+        self.current_figure.plot(x_axis, y_axis)
+        self.current_figure.set_title(title)
         self.draw()
 
     def plot_image(self, image, title=""):
         """
         Displays a image in a view
+
         :param image: The image to display
+        :type image: Numpy array
+
         :param title: The title to display
+        :type title: str
         """
-        fig = self.figure.add_subplot(111)
-        fig.axis("off")
+        self.clear_figure()
+        self.current_figure = self.figure.add_subplot(111)
+        self.current_figure.axis("off")
         if image.ndim == 2:
-            fig.imshow(image, plt.cm.gray)
+            self.current_figure.imshow(image, plt.cm.gray)
         else:
-            fig.imshow(image)
-        fig.set_title(title)
+            self.current_figure.imshow(image)
+        self.current_figure.set_title(title)
         self.draw()
+
+    def clear_figure(self):
+        """
+        Clears the current figure
+        """
+        if self.current_figure is not None:
+            plt.close(111)
+            self.current_figure = None
 
 
 if __name__ == '__main__':

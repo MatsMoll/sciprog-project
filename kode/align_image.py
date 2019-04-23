@@ -4,39 +4,39 @@ A module that aligns images
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from hdr import ImageSet
 
 
-def align_image_set(image_set):
+def align_images(images):
     """
     Aligns the images in the image set a crops the image to remove unwanted borders
-    :param image_set: The ImageSet to align
+
+    :param images: The images to align
+    :type images: Numpy array
+
     :return: A aligned ImageSets
     """
-    aligned_set = image_set.images.copy()
+    aligned_set = images.copy()
 
-    for i in range(1, image_set.images.shape[0]):
-        if np.std(image_set.images[i]) > 20:
-            aligned_set[i] = align_images(image_set.images[i], aligned_set[i - 1])[0]
+    for i in range(1, images.shape[0]):
+        if np.std(images[i]) > 20:
+            aligned_set[i] = align_image_pair(images[i], aligned_set[i - 1])[0]
         else:
             print("To low detail in order to align images")
             break
 
-    cropped_image = crop_image_set(aligned_set)
-
-    aligned_image_set = ImageSet(cropped_image)
-    aligned_image_set.shutter_speed = image_set.shutter_speed.copy()
-    aligned_image_set.original_shape = cropped_image.shape[1:]
-
-    return aligned_image_set
+    return crop_images(aligned_set)
 
 
-def align_images(im_one, im_two):
+def align_image_pair(im_one, im_two):
     """
     Align two images to each other
 
     :param im_one: The image to align
+    :type im_one: Numpy array
+
     :param im_two: The image to use as a reference point "the correct image"
+    :type im_two: Numpy array
+
     :return: A aligned version of the im_one
     """
 
@@ -95,13 +95,15 @@ def align_images(im_one, im_two):
     return im1Reg, h
 
 
-def crop_image_set(images):
+def crop_images(images):
     """
     Crops a image based on the alpha channel
 
     This uses the assumption that the alpha is only in the corner or as a border
 
     :param images: The image set to crop
+    :type images: Numpy array
+
     :return: The cropped image
     """
     x_1 = 0
@@ -136,10 +138,10 @@ def crop_image_set(images):
 
 
 if __name__ == '__main__':
-    from hdr import test_image_set
+    from image_set import test_image_set
 
     test_image_set = test_image_set()
-    im_set = align_image_set(test_image_set)
+    im_set = test_image_set
 
     im = im_set.hdr_image(10)[:, :, 0:3] ** 0.2
     print("Im Done")
