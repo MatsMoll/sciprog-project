@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 
 from globalHDR import edit_luminance, edit_globally, read_image
 from image_set import ImageSet
+from localHDR import filter_image
+from filter_config import FilterImageConfig, EffectConfig
 
 
 class App(QWidget):
@@ -31,6 +33,8 @@ class App(QWidget):
         self.filter_layout = QVBoxLayout()
         self.add_global_filter_button = QPushButton("Legg til globalt filter", self)
         self.add_lum_filter_button = QPushButton("Legg til luminans filter", self)
+        self.add_gaussian_button = QPushButton("Legg til gaussian filter", self)
+        self.add_bilateral_button = QPushButton("Legg til gaussian filter", self)
         self.status_label = QLabel("Ingen bilder er lastet inn")
         self.init_ui()
 
@@ -50,6 +54,12 @@ class App(QWidget):
         self.add_lum_filter_button.clicked.connect(self.add_lum_filter)
         self.add_lum_filter_button.setEnabled(False)
 
+        self.add_gaussian_button.clicked.connect(self.add_gaussian_filter)
+        self.add_gaussian_button.setEnabled(False)
+
+        self.add_bilateral_button.clicked.connect(self.add_bilateral_filter)
+        self.add_bilateral_button.setEnabled(False)
+
         self.status_label.setStyleSheet("background: orange")
         self.status_label.setContentsMargins(10, 3, 10, 3)
 
@@ -58,6 +68,8 @@ class App(QWidget):
         button_layout.addWidget(open_image_button)
         button_layout.addWidget(self.add_global_filter_button)
         button_layout.addWidget(self.add_lum_filter_button)
+        button_layout.addWidget(self.add_gaussian_button)
+        button_layout.addWidget(self.add_bilateral_button)
         button_layout.setAlignment(Qt.AlignCenter)
 
         group_box = QGroupBox("Instillinger")
@@ -97,7 +109,7 @@ class App(QWidget):
 
     def add_global_filter(self):
         """
-        Adds a filter to the layout
+        Adds a global filter to the layout
         """
         new_filter = FilterWidget(self.update_image_with_filter, self.remove_filter)
         self.filter_widgets.append(new_filter)
@@ -105,11 +117,29 @@ class App(QWidget):
 
     def add_lum_filter(self):
         """
-        Adds a filter to the layout
+        Adds a luminance filter to the layout
         """
         new_filter = LumimanceFilterWidget(self.update_image_with_filter, self.remove_filter)
         self.filter_widgets.append(new_filter)
         self.filter_layout.addWidget(new_filter)
+
+    def add_gaussian_filter(self):
+        """
+        Adds a gaussian filter to the layout
+        """
+        new_filter = GaussianFilterWidget(self.update_image_with_filter, self.remove_filter)
+        self.filter_widgets.append(new_filter)
+        self.filter_layout.addWidget(new_filter)
+        self.update_image_with_filter()
+
+    def add_bilateral_filter(self):
+        """
+        Adds a bilateral filter to the layout
+        """
+        new_filter = BilateralFilterWidget(self.update_image_with_filter, self.remove_filter)
+        self.filter_widgets.append(new_filter)
+        self.filter_layout.addWidget(new_filter)
+        self.update_image_with_filter()
 
     def remove_filter(self, filter_widget):
         """
@@ -146,6 +176,8 @@ class App(QWidget):
         if ok:
             self.add_global_filter_button.setEnabled(True)
             self.add_lum_filter_button.setEnabled(True)
+            self.add_gaussian_button.setEnabled(True)
+            self.add_bilateral_button.setEnabled(True)
 
             try:
                 if file_name[0].endswith(".exr"):
@@ -166,7 +198,7 @@ class App(QWidget):
 
 class SliderWidget(QWidget):
     """
-    A Widget that presents a filter setting
+    A Widget that presents a slider, with some controls
     """
 
     def __init__(self, value_did_change_function, title=None, parent=None):
@@ -175,6 +207,7 @@ class SliderWidget(QWidget):
         self.effect_value_label = QLabel("1")
         self.value_did_change_function = value_did_change_function
         self.title = title
+        self.fraction_value = 100
         self.init_ui()
 
     def init_ui(self):
@@ -242,14 +275,13 @@ class SliderWidget(QWidget):
         """
         :return: The value of the slider
         """
-        return self.effect_slider.value() / 100
+        return self.effect_slider.value() / self.fraction_value
 
     def slider_did_change(self):
         """
         A function that is called when the slider change value
         """
-        effect_value = self.value()
-        self.effect_value_label.setText(str(effect_value))
+        self.effect_value_label.setText(str(self.value()))
         self.value_did_change_function()
 
 
@@ -341,12 +373,10 @@ class FilterWidget(QWidget):
 
         :return: A new image with the filter on
         """
-        filter_name = self.filter_options[self.selected_filter_index]
-        if filter_name != "ingen":
-            effect_value = self.effect_value()
-            return edit_globally(image, effect=effect_value, func=filter_name)
-        else:
-            return image
+        config = EffectConfig()
+        config.func = self.filter_options[self.selected_filter_index]
+        config.level = self.effect_value()
+        return edit_globally(image, config)
 
 
 class LumimanceFilterWidget(FilterWidget):
@@ -382,26 +412,115 @@ class LumimanceFilterWidget(FilterWidget):
 
         :return: A new image with the filter on
         """
-        filter_name = self.filter_options[self.selected_filter_index]
-        if filter_name != "ingen":
-            return edit_luminance(image, self.effect_value(), self.luminance_value(),
-                                  self.chromasity_value(), filter_name)
-        else:
-            return image
+        config = EffectConfig()
+        config.func = self.filter_options[self.selected_filter_index]
+        config.level = self.effect_value()
+        return edit_globally(image, config)
 
 
 class GaussianFilterWidget(QWidget):
+    """
+    A filter that apply a gaussian local rendering filter to the image
+    """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
         super(GaussianFilterWidget, self).__init__(parent)
+
         self.sigma_slider = SliderWidget(value_did_change_function, "Sigma")
+        self.sigma_slider.fraction_value = 1
+        self.sigma_slider.effect_slider.setMaximum(20)
+        self.sigma_slider.effect_slider.setValue(3)
 
         self.remove_button = QPushButton("Slett", self)
-        self.remove_button.clicked.connect(self.remove_was_clicked)
+        self.remove_button.clicked.connect(self.remove_widget_was_clicked)
+
+        self.remove_filter_function = remove_filter_function
 
         effect_layout = QVBoxLayout()
+        effect_layout.addWidget(self.remove_button)
+        effect_layout.addWidget(self.sigma_slider)
 
         self.setLayout(effect_layout)
+
+    def remove_widget_was_clicked(self):
+        """
+        A function that will be called when the remove button is clicked
+        """
+        self.remove_filter_function(self)
+
+    def apply_filter(self, image):
+        """
+        Apply a filter to a image
+
+        :param image: The image to apply the filter on
+        :type image: Numpy array
+
+        :return: A new image with the filter on
+        """
+        config = FilterImageConfig()
+        config.effect.mode = "nothing"
+        config.blur.sigma = self.sigma_slider.value()
+        return filter_image(image, config)
+
+
+class BilateralFilterWidget(QWidget):
+    """
+    A filter that apply a bilateral local rendering filter to the image
+    """
+
+    def __init__(self, value_did_change_function, remove_filter_function, parent=None):
+        super(BilateralFilterWidget, self).__init__(parent)
+
+        self.sigma_space_slider = SliderWidget(value_did_change_function, "Sigma Space")
+        self.sigma_space_slider .fraction_value = 1
+        self.sigma_space_slider .effect_slider.setMaximum(200)
+        self.sigma_space_slider .effect_slider.setValue(100)
+
+        self.sigma_color_slider = SliderWidget(value_did_change_function, "Sigma Color")
+        self.sigma_color_slider.fraction_value = 1
+        self.sigma_color_slider.effect_slider.setMaximum(200)
+        self.sigma_color_slider.effect_slider.setValue(100)
+
+        self.diameter_slider = SliderWidget(value_did_change_function, "Diameter")
+        self.diameter_slider.fraction_value = 1
+        self.diameter_slider.effect_slider.setMaximum(15)
+        self.diameter_slider.effect_slider.setValue(5)
+
+        self.remove_button = QPushButton("Slett", self)
+        self.remove_button.clicked.connect(self.remove_widget_was_clicked)
+
+        self.remove_filter_function = remove_filter_function
+
+        effect_layout = QVBoxLayout()
+        effect_layout.addWidget(self.remove_button)
+        effect_layout.addWidget(self.sigma_color_slider)
+        effect_layout.addWidget(self.sigma_space_slider)
+        effect_layout.addWidget(self.diameter_slider)
+
+        self.setLayout(effect_layout)
+
+    def remove_widget_was_clicked(self):
+        """
+        A function that will be called when the remove button is clicked
+        """
+        self.remove_filter_function(self)
+
+    def apply_filter(self, image):
+        """
+        Apply a filter to a image
+
+        :param image: The image to apply the filter on
+        :type image: Numpy array
+
+        :return: A new image with the filter on
+        """
+        config = FilterImageConfig()
+        config.effect.mode = "nothing"
+        config.blur.linear = False
+        config.blur.sigma_color = int(self.sigma_color_slider.value())
+        config.blur.sigma_space = int(self.sigma_space_slider.value())
+        config.blur.diameter = int(self.diameter_slider.value())
+        return filter_image(image, config)
 
 
 class PlotCanvas(FigureCanvas):
