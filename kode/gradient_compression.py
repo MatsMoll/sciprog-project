@@ -6,15 +6,12 @@ from cv2 import pyrUp, pyrDown, resize
 from globalHDR import luminance
 
 
-def explicitly(n_points, n_time, initial_values, vector_values):
+def explicitly(filter_config, initial_values, vector_values):
     """
     Calculates the explicit solution for a partial differential equation
 
-    :param n_points: The number of iterations to calculate
-    :type n_points: int
-
-    :param n_time: The length to calculate
-    :type n_time: int
+    :param filter_config: The config of the filter
+    :type filter_config: GradientFilterConfig
 
     :param initial_values: The initial values
     :type initial_values: Numpy array
@@ -24,9 +21,9 @@ def explicitly(n_points, n_time, initial_values, vector_values):
 
     :return: A image
     """
-    delta_t = 1 / (n_time - 1)
+    delta_t = 1 / (filter_config.iteration_distance - 1)
     u = initial_values
-    for _ in range(0, n_points):
+    for _ in range(0, filter_config.iteration_amount):
         u[1:-1, 1:-1] = delta_t * (u[2:, 1:-1] + u[:-2, 1:-1] + u[1:-1, 2:] + u[1:-1, :-2] - 4 * u[1:-1, 1:-1]) \
                         - delta_t * (vector_values[1:-1, 1:-1, 0] + vector_values[1:-1, 1:-1, 1]) + u[1:-1, 1:-1]
 
@@ -48,7 +45,7 @@ def diff_two(u):
     return g
 
 
-def compress_gradient(original, func, initial_value=None):
+def compress_gradient(original, filter_config, initial_value=None):
     """
     Compresses the length of the gradient vector and returns a new image
     based on this new vector
@@ -56,8 +53,8 @@ def compress_gradient(original, func, initial_value=None):
     :param original: The image to compress
     :type original: Numpy array
 
-    :param func: The function to use when compressing the length
-    :type func: Function
+    :param filter_config: The config of the filter
+    :type filter_config: GradientFilterConfig
 
     :param initial_value: The initial value to use when finding the new image. Will use the original if this is None
     :type initial_value: Numpy array or None
@@ -65,29 +62,27 @@ def compress_gradient(original, func, initial_value=None):
     :return: A new image fitting the compressed vector
     """
     du_0_len, du_0 = gradient_vectors(original)
-    du_0_len[du_0_len == 0] = 0.0001
 
-    f_du_len = func(du_0_len)
-
+    f_du_len = filter_config.func(du_0_len)
+    du_0_len[du_0_len == 0] = 0.1
     f_du = f_du_len[:, :, None] * du_0 / du_0_len[:, :, None]
-
     div_f = divergence_matrix(f_du)
 
     if initial_value is None:
-        return explicitly(10, 10, original, div_f)
+        return explicitly(filter_config, original, div_f)
     else:
-        return explicitly(10, 10, initial_value, div_f)
+        return explicitly(filter_config, initial_value, div_f)
 
 
-def compress_gradient_pyr(original, func):
+def compress_gradient_pyr(original, filter_config):
     """
     Compresses the gradient vector in the same way as `compress_gradient`, but using a Gaussian pyramid
 
     :param original: The luminace of the image to compress
     :type original: Numpy array
 
-    :param func: The function to use when compressing the length
-    :type func: Function
+    :param filter_config: The config of the filter
+    :type filter_config: GradientFilterConfig
 
     :return: The new image / luminace
     """
@@ -106,9 +101,34 @@ def compress_gradient_pyr(original, func):
         if initial_value.shape != images[-i].shape[0:-1]:
             initial_value = resize(pyrUp(initial_value), tuple(reversed(lum.shape)))
 
-        initial_value = compress_gradient(lum, func, initial_value=initial_value)
+        initial_value = compress_gradient(lum, filter_config, initial_value=initial_value)
 
     return initial_value
+
+
+def gradient_compress_color(im, filter_config):
+    """
+    Compresses the gradient of a color image
+
+    :param im: The image to compress
+    :type im: Numpy array
+
+    :param func: The function to use when compressing the length
+    :type func: Function
+
+    :param filter_config: The config of the filter
+    :type filter_config: GradientFilterConfig
+
+    :return: The new image
+    """
+    lum = luminance(im)
+    new_lum = lum
+    if filter_config.use_pyramid:
+        new_lum = compress_gradient_pyr(np.log(lum), filter_config)
+    else:
+        new_lum = compress_gradient(np.log(lum), filter_config)
+    new_lum = np.exp(new_lum)
+    return (im[:, :, :] / lum[:, :, None]) ** filter_config.saturation * new_lum[:, :, None]
 
 
 def divergence_matrix(matrix):
@@ -124,8 +144,6 @@ def divergence_matrix(matrix):
     div_f[1:-1, :, 0] = matrix[1:-1, :, 0] - matrix[:-2, :, 0]
     div_f[:, 1:-1, 1] = matrix[:, 1:-1, 1] - matrix[:, :-2, 1]
     div_f[:, 0, 1] = matrix[:, 0, 1]
-    plt.imshow(np.sqrt(div_f[:, :, 0] ** 2 + div_f[:, :, 1] ** 2), plt.cm.gray)
-    plt.show()
     return div_f
 
 
