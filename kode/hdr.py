@@ -129,8 +129,28 @@ class ImageSet:
     """
     A class containing a set of images
     This makes it easier to handel the images
+
+    :attr images: The different images in the image set
+    :type images: A numpy array
+
+    :attr shutter_speed: The different shutter speeds
+    :type shutter_speed: A numpy array
+
+    :attr original_shape: The original image shape
+    :type original_shape: A tuple
     """
+
+    images = np.array([])
+    shutter_speed = np.array([])
+    original_shape = (,)
+
     def __init__(self, images):
+        """
+        Inits a image set
+
+        :param images: The images
+        :type images: A tuple or numpy array
+        """
         if isinstance(images, list):
             self.images = np.array([])
             self.shutter_speed = []
