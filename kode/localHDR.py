@@ -35,7 +35,7 @@ def extract_alpha(im):
     shape = im[:, :, :-1].shape
     im_copy = np.zeros(shape)
     for i in range(0, im.shape[-1] - 1):
-        im_copy[:, :, i] = im[:, :, i] * im[:, :, 3]
+        im_copy[:, :, i] = im[:, :, i]
     im = im_copy
     return im, alpha
 
@@ -102,7 +102,6 @@ def edit_blurred_image(blurry_im, effect):
     elif effect.mode == "luminance":
         return globalHDR.edit_luminance(blurry_im, effect)
     else:
-        print("Unavailable mode:", effect.mode, "\n-> Returned input image.")
         return blurry_im
 
 
@@ -188,15 +187,8 @@ if __name__ == '__main__':
     input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
     globalHDR.show(input_im)
 
-    # filter = FilterImageConfig()
-    # filter.blur.linear = False
-    # filter.blur.sigma = 4
-    # filter.blur.diameter = 15
-    # filter.blur.sigma_space = 10
-    # filter.blur.sigma_color = 10
-    # filter.gamma = 12
-
     linear_im_config = FilterImageConfig()
+    linear_im_config.blur.linear = False
     linear_im = filter_image(input_im, linear_im_config)
     globalHDR.show(linear_im)
 

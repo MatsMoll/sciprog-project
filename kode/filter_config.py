@@ -16,10 +16,10 @@ class BlurImageConfig:
     :type diameter: Int.
 
     :attr sigma_space: Range of pixel distance values for mixing in the pixel neighborhood.
-    :type sigma_space: Int.
+    :type sigma_space: Double.
 
     :attr sigma_color: Range of pixel color values for color mixing in the pixel neighborhood.
-    :type sigma_color: Int.
+    :type sigma_color: Double.
     """
 
     linear = True
