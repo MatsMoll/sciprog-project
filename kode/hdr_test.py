@@ -7,6 +7,9 @@ import hdr
 
 
 class HDRTest(unittest.TestCase):
+    """
+    The tests for the hdr.py module
+    """
 
     @staticmethod
     def random_image_set(x, y, colors, n):
