@@ -390,6 +390,20 @@ class LumimanceFilterWidget(FilterWidget):
             return image
 
 
+class GaussianFilterWidget(QWidget):
+
+    def __init__(self, value_did_change_function, remove_filter_function, parent=None):
+        super(GaussianFilterWidget, self).__init__(parent)
+        self.sigma_slider = SliderWidget(value_did_change_function, "Sigma")
+
+        self.remove_button = QPushButton("Slett", self)
+        self.remove_button.clicked.connect(self.remove_was_clicked)
+
+        effect_layout = QVBoxLayout()
+
+        self.setLayout(effect_layout)
+
+
 class PlotCanvas(FigureCanvas):
     """
     A Widget view that presents a plot or image
