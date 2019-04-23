@@ -1,3 +1,7 @@
+"""
+A module that provides attributes to simplifies function calls in 'globalHDR.py' and 'localHDR.py'.
+"""
+
 class BlurImageConfig:
     """
     A class providing the blur configuration.
