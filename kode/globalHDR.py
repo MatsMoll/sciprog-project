@@ -95,7 +95,8 @@ def edit_globally(im, effect):
     elif effect.func == "ln":
         if (im <= 0).any():
             return np.log(im + im.min() + .1)
-        return np.log(im)
+        else:
+            return np.log(im)
     elif effect.func == "pow":
         effect.level = np.clip(effect.level, 0, 4)
         return im ** effect.level
