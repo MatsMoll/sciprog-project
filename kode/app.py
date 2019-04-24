@@ -12,7 +12,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from imageio import imwrite
 
-from globalHDR import edit_luminance, edit_globally, read_image
+from globalHDR import split_image, edit_globally, read_image
 from image_set import ImageSet
 from localHDR import filter_image
 from filter_config import FilterImageConfig, EffectConfig, GradientFilterConfig
@@ -39,6 +39,7 @@ class App(QWidget):
         self.add_bilateral_button = QPushButton("Legg til bilateral filter", self)
         self.add_gradient_compression_button = QPushButton("Legg til gradient comp. filter", self)
         self.save_image_button = QPushButton("Lagre bilde", self)
+        self.align_image_button = QPushButton("Opplinjer Bildesett", self)
         self.status_label = QLabel("Ingen bilder er lastet inn")
         self.init_ui()
 
@@ -70,6 +71,9 @@ class App(QWidget):
         self.save_image_button.clicked.connect(self.save_image)
         self.save_image_button.setEnabled(False)
 
+        self.align_image_button.clicked.connect(self.align_image_set)
+        self.align_image_button.setEnabled(False)
+
         self.status_label.setStyleSheet("background: orange")
         self.status_label.setContentsMargins(10, 3, 10, 3)
 
@@ -82,6 +86,7 @@ class App(QWidget):
         button_layout.addWidget(self.add_bilateral_button)
         button_layout.addWidget(self.add_gradient_compression_button)
         button_layout.addWidget(self.save_image_button)
+        button_layout.addWidget(self.align_image_button)
         button_layout.setAlignment(Qt.AlignCenter)
 
         group_box = QGroupBox("Instillinger")
@@ -118,6 +123,15 @@ class App(QWidget):
         Setup the image GUI
         """
         self.main_image = PlotCanvas(width=5, height=4)
+
+    def align_image_set(self):
+        if self.original_image_set is not None:
+            try:
+                self.original_image_set = self.original_image_set.aligned_image_set()
+                self.hdr_image = self.original_image_set.hdr_image(10)
+                self.update_image_with_filter()
+            except:
+                print("Error")
 
     def add_global_filter(self):
         """
@@ -180,9 +194,10 @@ class App(QWidget):
 
         :return: A new image with the selected filters
         """
-        self.edited_image = self.original_image_set.images[0].copy() / 255
         if self.hdr_image is not None:
             self.edited_image = self.hdr_image.copy()
+        else:
+            self.edited_image = self.original_image_set.images[0].copy() / 255
 
         for filter_widget in self.filter_widgets:
             self.edited_image = filter_widget.apply_filter(self.edited_image)
@@ -212,11 +227,13 @@ class App(QWidget):
             try:
                 if file_name[0].endswith(".exr"):
                     self.original_image_set = None
-                    self.hdr_image = read_image(file_name)
+                    self.hdr_image = read_image(file_name[0])
+                    self.align_image_button.setEnabled(False)
                 else:
                     image_info = list(map(lambda file: (file, file.rsplit("_", 1)[-1].replace(".png", "")), file_name))
-                    self.original_image_set = ImageSet(image_info).aligned_image_set()
+                    self.original_image_set = ImageSet(image_info)
                     self.hdr_image = self.original_image_set.hdr_image(10)
+                    self.align_image_button.setEnabled(True)
 
                 self.update_image_with_filter()
                 self.status_label.setText("Bilde ble lastet inn")
@@ -239,7 +256,6 @@ class App(QWidget):
             except:
                 self.status_label.setText("Ups! Det skjedde en feil ved lagring av bildet")
                 self.status_label.setStyleSheet("background: red")
-
 
 
 class SliderWidget(QWidget):
@@ -457,7 +473,11 @@ class LumimanceFilterWidget(FilterWidget):
 
         :return: A new image with the filter on
         """
-        return edit_luminance(image, self.chromasity_value(), self.effect_value())
+        config = EffectConfig()
+        config.level = self.effect_value()
+        config.chrom_scale = self.chromasity_value()
+        config.func = self.filter_options[self.selected_filter_index]
+        return split_image(image, config)
 
 
 class GaussianFilterWidget(QWidget):

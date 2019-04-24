@@ -159,15 +159,3 @@ def find_reference_points_for(images):
     im_len = shape[-2] * shape[-1]
     spacing = max(int(im_len / 1000), 1)
     return np.arange(0, im_len, spacing)
-
-
-def load_image(path):
-    """
-    This loads an image
-
-    :param path: The path to the image
-    :type path: str
-
-    :return: a Image object
-    """
-    return np.array(imageio.imread(path))

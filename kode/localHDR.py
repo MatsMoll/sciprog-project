@@ -194,5 +194,8 @@ if __name__ == '__main__':
 
     nonlinear_im_config = FilterImageConfig()
     nonlinear_im_config.blur.linear = False
+    nonlinear_im_config.effect.func = "pow"
+    nonlinear_im_config.effect.level = .1
+    nonlinear_im_config.gamma = 1
     nonlinear_im = filter_image(input_im, nonlinear_im_config)
     globalHDR.show(nonlinear_im)

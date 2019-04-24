@@ -18,11 +18,7 @@ def align_images(images):
     aligned_set = images.copy()
 
     for i in range(1, images.shape[0]):
-        if np.std(images[i]) > 20:
-            aligned_set[i] = align_image_pair(images[i], aligned_set[i - 1])[0]
-        else:
-            print("To low detail in order to align images")
-            break
+        aligned_set[i] = align_image_pair(images[i], aligned_set[i - 1])[0]
 
     return crop_images(aligned_set)
 

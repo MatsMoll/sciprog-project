@@ -13,13 +13,13 @@ class BlurImageConfig:
     :attr sigma: Range of gaussian filter.
     :type sigma: Int.
 
-    :attr diameter: Diameter of pixel neighborhood.
+    :attr diameter: Diameter of pixel neighborhood. (Bilateral)
     :type diameter: Int.
 
-    :attr sigma_space: Range of pixel distance values for mixing in the pixel neighborhood.
+    :attr sigma_space: Range of pixel distance values for mixing in the pixel neighborhood. (Bilateral)
     :type sigma_space: Double.
 
-    :attr sigma_color: Range of pixel color values for color mixing in the pixel neighborhood.
+    :attr sigma_color: Range of pixel color values for color mixing in the pixel neighborhood. (Bilateral)
     :type sigma_color: Double.
     """
 

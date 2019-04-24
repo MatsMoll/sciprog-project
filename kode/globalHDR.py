@@ -6,24 +6,25 @@ This module is rendering the input image with a global function.
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio as io
+from filter_config import EffectConfig
 
 
-def read_image(path="../eksempelbilder/StillLife/StillLife", image_format=".exr"):
+def read_image(path="../eksempelbilder/Ocean/Ocean.exr"):
     """
     Reads an image from a given path.
 
     Note: See example for formatting guidelines (including image format).
-    Example: ../eksempelbilder/StillLife/StillLife.exr
+    Example: ../eksempelbilder/Ocean/Ocean.exr
 
     :param path: The path to the image.
     :type path: String.
 
-    :param image_format: The image format.
-    :type image_format: String.
-
     :return: The desired image.
     """
-    return io.imread(path + image_format)
+    im = io.imread(path)
+    if im.ndim == 3 and im.shape[-1] == 4:
+        im = im[:, :, :-1]
+    return im
 
 
 def show(im):
@@ -33,11 +34,13 @@ def show(im):
     :param im: Input image.
     :type im: Numpy array.
     """
-    im = (im - im.min()) / (im.max() - im.min())
+    im = (im - im.min()) / (im.max() - im.min()).astype(float)
+    # im[im > 1] = 1
+    # im[im <= 0] = 0
     if im.ndim <= 2:
         plt.imshow(im, plt.cm.gray)
     else:
-        plt.imshow(im.astype(float))
+        plt.imshow(im)
     plt.show()
 
 
@@ -57,7 +60,9 @@ def luminance(im):
     if im.ndim <= 2:
         lum_channel = im
     else:
-        lum_channel = im.sum(2)
+        shape = (im.shape[0], im.shape[1], 1)
+        lum_channel = np.zeros(shape)
+        lum_channel[:, :, 0] = (im[:, :, 0] + im[:, :, 1] + im[:, :, 2])
     return lum_channel
 
 
@@ -169,5 +174,10 @@ def compare(im1, im2):
 
 
 if __name__ == '__main__':
-    image = read_image()
+    image = read_image()# [:, :, :-1]
     show(image)
+
+    test = EffectConfig()
+    test.func = "ln"
+    morn = edit_globally(image, test)
+    show(morn)

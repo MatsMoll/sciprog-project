@@ -4,6 +4,7 @@ A module simplifying the hdr calculations
 import numpy as np
 import hdr
 from align_image import align_images
+from globalHDR import read_image
 
 
 class ImageSet:
@@ -40,9 +41,9 @@ class ImageSet:
                 self.shutter_speed.append(np.log(float(shutter)))
 
                 if self.images.size == 0:
-                    self.images = np.array([hdr.load_image(path)])
+                    self.images = np.array([read_image(path)])
                 else:
-                    self.images = np.append(self.images, [hdr.load_image(path)], axis=0)
+                    self.images = np.append(self.images, [read_image(path)], axis=0)
 
             if images:
                 self.original_shape = np.shape(self.images[0])
@@ -167,6 +168,7 @@ class ImageSet:
         aligned_image_set = ImageSet(aligned_images)
         aligned_image_set.shutter_speed = self.shutter_speed.copy()
         aligned_image_set.original_shape = aligned_images.shape[1:]
+        print("Morn")
         return aligned_image_set
 
 
