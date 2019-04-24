@@ -6,14 +6,13 @@ This is the unit test file for functions within the localHDR.py file.
 import unittest
 import numpy as np
 import localHDR
-from filter_config import FilterImageConfig, BlurImageConfig, EffectConfig
+from filter_config import FilterImageConfig, BlurImageConfig
 
 
 class LocalHDRTest(unittest.TestCase):
     """
     Tests the major functions from localHDR.py.
 
-    Note! A lower and upper boundary is set with a expected image.
     """
     def test_has_alpha(self):
         """
@@ -39,9 +38,9 @@ class LocalHDRTest(unittest.TestCase):
     def test_extract_alpha(self):
         """
         Tests extraction of the alpha channel (dimension).
-        Will only be called if four channels (dimensions) is present, therefore there's no check.
+        Will only be called if four channels (dimensions) is present.
         """
-        image_4d = np.array([[  # One image with shape (1, 3, 4) ## Rename to image_4d
+        image_4d = np.array([[
             [1, 2, 3, 4],
             [4, 5, 6, 7],
             [8, 9, 10, 11]
@@ -49,9 +48,9 @@ class LocalHDRTest(unittest.TestCase):
         im, alpha = localHDR.extract_alpha(image_4d)
         self.assertTrue(np.allclose(alpha, image_4d[:, :, 3]))
 
-    def test_blur_image(self): # utvid test til å gjelde non-linear også
+    def test_blur_image(self):
         """
-        Test the blur image function with sigma value 3.
+        Test the linear and non-linear blur image function.
         """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
@@ -80,9 +79,9 @@ class LocalHDRTest(unittest.TestCase):
         output_nonlinear = localHDR.blur_image(input_image, output_nonlinear_config)
         self.assertTrue(np.allclose(output_nonlinear, expected_nonlinear_image, atol=6e-01))
 
-    def test_find_details(self): # Rewrite!!
+    def test_find_details(self):
         """
-        Tests the find details function with a detail level set to the 70th-percentile.
+        Tests the find details function.
         """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
@@ -162,7 +161,7 @@ class LocalHDRTest(unittest.TestCase):
 
     def test_append_channel(self):
         """
-        ...
+        Tests appending a forth (commonly alpha) channel after it has been extracted.
         """
         image_4d = np.array([[
             [1, 2, 3, 4],
@@ -175,7 +174,8 @@ class LocalHDRTest(unittest.TestCase):
 
     def test_filter_linear(self):
         """
-        Tests the main function calling all the other minor helping functions.
+        Tests the linear filtering of an input image.
+        This is the outer-most function with the most customizability.
         """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
