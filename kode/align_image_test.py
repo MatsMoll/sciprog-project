@@ -61,3 +61,6 @@ class AlignImageTests(unittest.TestCase):
 
         self.assertEqual(expected_im_set.original_shape, output_image_set.original_shape)
         self.assertTrue(np.array_equal(expected_im_set.shutter_speed, output_image_set.shutter_speed))
+
+if __name__ == '__main__':
+    unittest.main()

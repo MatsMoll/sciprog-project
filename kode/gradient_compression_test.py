@@ -104,3 +104,7 @@ class GradientCompressionTests(unittest.TestCase):
         config.use_pyramid = True
         result = gradient_compression.gradient_compress_color(test_im, config)
         self.assertEqual(test_im.shape, result.shape)
+
+
+if __name__ == '__main__':
+    unittest.main()
