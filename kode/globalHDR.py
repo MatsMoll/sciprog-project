@@ -6,7 +6,6 @@ This module is rendering the input image with a global function.
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio as io
-from filter_config import EffectConfig
 
 
 def read_image(path="../eksempelbilder/Ocean/Ocean.exr"):
@@ -135,9 +134,7 @@ def edit_luminance(lum, chroma, effect):
 
     lum = lum * effect.lum_scale
     chroma = chroma * effect.chrom_scale
-
-    result = lum * chroma
-    return result
+    return lum * chroma
 
 
 def split_image(im, effect):
@@ -157,27 +154,6 @@ def split_image(im, effect):
     return edit_luminance(lum, chroma, effect)
 
 
-def compare(im1, im2):
-    """
-    Help function that takes two input images
-        and prints out the difference between their pixel values.
-
-    :param im1: Input image 1.
-    :type im1: Numpy array.
-
-    :param im2: Input image 2.
-    :type im2: Numpy array.
-
-    :return: Prints the difference between the images.
-    """
-    return print(im2-im1)
-
-
 if __name__ == '__main__':
-    image = read_image()# [:, :, :-1]
+    image = read_image()
     show(image)
-
-    test = EffectConfig()
-    test.func = "ln"
-    morn = edit_globally(image, test)
-    show(morn)

@@ -7,7 +7,6 @@ import numpy as np
 import scipy.ndimage as ndimage
 import cv2
 import globalHDR
-from filter_config import FilterImageConfig
 
 
 def has_alpha(im):
@@ -186,16 +185,3 @@ def filter_image(im, filters):
 if __name__ == '__main__':
     input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
     globalHDR.show(input_im)
-
-    linear_im_config = FilterImageConfig()
-    linear_im_config.blur.linear = False
-    linear_im = filter_image(input_im, linear_im_config)
-    globalHDR.show(linear_im)
-
-    nonlinear_im_config = FilterImageConfig()
-    nonlinear_im_config.blur.linear = False
-    nonlinear_im_config.effect.func = "pow"
-    nonlinear_im_config.effect.level = .1
-    nonlinear_im_config.gamma = 1
-    nonlinear_im = filter_image(input_im, nonlinear_im_config)
-    globalHDR.show(nonlinear_im)

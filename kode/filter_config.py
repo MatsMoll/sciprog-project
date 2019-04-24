@@ -1,5 +1,5 @@
 """
-A module that provides attributes to simplifies function calls in 'globalHDR.py' and 'localHDR.py'.
+A module that provides attributes to simplifies function calls.
 """
 
 
