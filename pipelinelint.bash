@@ -1,4 +1,4 @@
-pylint kode/*.py --rcfile=lint-config.rc || true # Ignorerer exit code
+pylint kode/*.py --rcfile=lint-config.rc || true # Ignoring exit code
 values=$(pylint kode/*.py --rcfile=lint-config.rc | grep rated | awk '{print $7}')
 IFS='/'
 score=$(echo $values | awk '{print $1}')
@@ -14,6 +14,7 @@ coverage run align_image_test.py
 coverage run hdr_test.py
 coverage run globalHDR_test.py
 coverage run localHDR_test.py
+coverage run report
 pros=$(coverage report | grep TOTAL | awk '{print $4}')
 pros=${pros%\%}
 echo $pros

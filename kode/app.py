@@ -10,13 +10,13 @@ from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QSizePolicy,
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+from imageio import imwrite
 
-from globalHDR import edit_luminance, edit_globally, read_image, luminance
+from globalHDR import edit_luminance, edit_globally, read_image
 from image_set import ImageSet
 from localHDR import filter_image
 from filter_config import FilterImageConfig, EffectConfig, GradientFilterConfig
 from gradient_compression import gradient_compress_color
-from imageio import imwrite
 
 
 class App(QWidget):
@@ -154,6 +154,9 @@ class App(QWidget):
         self.update_image_with_filter()
 
     def add_gradient_compression_filter(self):
+        """
+        Adds a gradient compression filter to the layout
+        """
         new_filter = GradientCompressionFilterWidget(self.update_image_with_filter, self.remove_filter)
         self.filter_widgets.append(new_filter)
         self.filter_layout.addWidget(new_filter)
@@ -223,6 +226,9 @@ class App(QWidget):
                 self.status_label.setStyleSheet("background: red")
 
     def save_image(self):
+        """
+        Saves a image to a path that is selected by the user
+        """
         file_name, ok = QFileDialog.getSaveFileName(self, "Lagre bilde", "", "PNG (*.png)")
 
         if ok and file_name and self.hdr_image.any():
@@ -546,6 +552,9 @@ class BilateralFilterWidget(FilterWidget):
 
 
 class GradientCompressionFilterWidget(FilterWidget):
+    """
+    A widget applying a gradient compression filter
+    """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
         super(GradientCompressionFilterWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
@@ -556,6 +565,14 @@ class GradientCompressionFilterWidget(FilterWidget):
         self.effect_layout.addWidget(self.use_pyramide_checkbox)
 
     def filter_function(self, im):
+        """
+        A function that simplify the use of `edit_globaly` and `gradient_compression_color`
+
+        :param im: The image to apply a filter on
+        :type im: Numpy array
+
+        :return: The altered image
+        """
         config = EffectConfig()
         config.func = self.filter_options[self.selected_filter_index]
         config.level = self.effect_value()
