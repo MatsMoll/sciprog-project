@@ -100,7 +100,7 @@ def edit_blurred_image(blurry_im, effect):
     if effect.mode == "global":
         return globalHDR.edit_globally(blurry_im, effect)
     elif effect.mode == "luminance":
-        return globalHDR.edit_luminance(blurry_im, effect)
+        return globalHDR.split_image(blurry_im, effect)
     else:
         return blurry_im
 
