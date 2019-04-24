@@ -1,7 +1,6 @@
 """
 A module to calculate the HDR-channels in a set of images
 """
-import imageio
 import numpy as np
 
 

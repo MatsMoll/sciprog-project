@@ -168,7 +168,6 @@ class ImageSet:
         aligned_image_set = ImageSet(aligned_images)
         aligned_image_set.shutter_speed = self.shutter_speed.copy()
         aligned_image_set.original_shape = aligned_images.shape[1:]
-        print("Morn")
         return aligned_image_set
 
 
