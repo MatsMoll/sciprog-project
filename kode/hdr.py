@@ -3,7 +3,6 @@ A module to calculate the HDR-channels in a set of images
 """
 import imageio
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def standard_weighting(x):
@@ -172,32 +171,3 @@ def load_image(path):
     :return: a Image object
     """
     return np.array(imageio.imread(path))
-
-
-if __name__ == "__main__":
-    # Testing
-    from image_set import test_image_set
-
-    color_images = test_image_set()
-
-    z_values = np.arange(0, 256)
-    color_im = color_images.hdr_image(10)
-    current_im = 2
-
-    print("max", color_im.max())
-    print("min", color_im.min())
-
-    color_im = (color_im - color_im.min()) / (color_im.max() - color_im.min()) * 255
-    color_im = color_im ** 0.2
-
-    for image in color_images.images:
-        print(image.min(), image.max())
-        print(image.mean())
-        plt.imshow(image)
-        plt.show()
-
-    print(color_im.min(), color_im.max())
-    print(color_im.mean())
-    plt.imshow((color_im - color_im.min()) / (color_im.max() - color_im.min()))
-    plt.show()
-    # plt.imshow(hdrImage.reshape(image_set.images[0].original_shape), plt.cm.gray)

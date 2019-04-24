@@ -10,8 +10,11 @@ if [ "$score" -lt "950" ]; then
 fi
 
 cd kode
-coverage run *_test.py && coverage report
-pros=$(coverage run *_test.py && coverage report | grep TOTAL | awk '{print $4}')
+coverage run align_image_test.py
+coverage run hdr_test.py
+coverage run globalHDR_test.py
+coverage run localHDR_test.py
+pros=$(coverage report | grep TOTAL | awk '{print $4}')
 pros=${pros%\%}
 echo $pros
 if [ "$pros" -lt "50" ]; then

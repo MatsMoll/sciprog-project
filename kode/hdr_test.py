@@ -4,6 +4,7 @@ Tests for the file hdr.py
 import unittest
 import numpy as np
 import hdr
+from image_set import ImageSet
 
 
 class HDRTest(unittest.TestCase):
@@ -36,7 +37,7 @@ class HDRTest(unittest.TestCase):
             exposure_im[i - 1][exposure_im[i - 1] > max_value] = max_value
             exposures[i - 1] = 2 ** (i - 1)
 
-        im_set = hdr.ImageSet(exposure_im)
+        im_set = ImageSet(exposure_im)
         im_set.shutter_speed = np.log(exposures)
         im_set.original_shape = rand_im.shape
 
@@ -74,12 +75,12 @@ class HDRTest(unittest.TestCase):
         """
         Tests the find_reference_points_for(...)
         """
-        gray_input = hdr.ImageSet(np.zeros((10, 10, 3)))  # 10 images with shape (10, 3)
+        gray_input = ImageSet(np.zeros((10, 10, 3)))  # 10 images with shape (10, 3)
         gray_expected = np.arange(0, 30)
         gray_output = hdr.find_reference_points_for(gray_input)
         self.assertTrue(np.array_equal(gray_output, gray_expected))
 
-        color_input = hdr.ImageSet(np.zeros((10, 1000, 300, 3)))  # 10 images with shape (1000, 300, 3)
+        color_input = ImageSet(np.zeros((10, 1000, 300, 3)))  # 10 images with shape (1000, 300, 3)
         color_expected = np.arange(0, 300000, 300)
         color_output = hdr.find_reference_points_for(color_input)
         self.assertTrue(np.array_equal(color_output, color_expected))
@@ -93,7 +94,7 @@ class HDRTest(unittest.TestCase):
             [2, 3, 4],
             [100, 100, 100]
         ]]])
-        image_set = hdr.ImageSet(image)
+        image_set = ImageSet(image)
         image_set.original_shape = (1, 3, 3)
         image_set.shutter_speed = [1]
         expected_image = np.array([[  # Shape (1, 3)
@@ -174,7 +175,7 @@ class HDRTest(unittest.TestCase):
         output = np.zeros(im_set.original_shape)
         for i in range(0, im_set.original_shape[-1] - 1):
             output[:, :, i] = hdr.reconstruct_image(
-            im_set.channels()[i], hdr.standard_weighting_vector, graph, im_set.shutter_speed)
+                im_set.channels()[i], hdr.standard_weighting_vector, graph, im_set.shutter_speed)
 
         output = output - output.min()
         scaled = output * rand_im.max() / output.max()
@@ -182,7 +183,3 @@ class HDRTest(unittest.TestCase):
         diff = np.abs(rand_im - scaled).sum()
         self.assertEqual(output.shape, (x, y, 3))
         self.assertTrue(diff < 0.5 * x * y * 3)
-
-
-if __name__ == "__main__":
-    unittest.main()
