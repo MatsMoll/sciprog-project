@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import imageio as io
 import localHDR
+from filter_config import EffectConfig
 
 
 def read_image(path="../eksempelbilder/StillLife/StillLife", image_format=".exr"):
@@ -34,8 +35,7 @@ def show(im):
     :param im: Input image.
     :type im: Numpy array.
     """
-    im[im > 1] = 1
-    im[im <= 0] = 0.1 * (10 ** -10)
+    im = (im - im.min()) / (im.max() - im.min())
     if im.ndim <= 2:
         plt.imshow(im, plt.cm.gray)
     else:

@@ -6,6 +6,7 @@ This is the unit test file for functions within the globalHDR.py file.
 import unittest
 import numpy as np
 import globalHDR
+from filter_config import EffectConfig
 
 
 class GlobalHDRTest(unittest.TestCase):
@@ -27,9 +28,11 @@ class GlobalHDRTest(unittest.TestCase):
         expected_image_upper = np.array([
             0.101, 0.317, 0.448, 0.708, 0.867, 0.995
         ])
-        output = globalHDR.edit_globally(input_image, "sqrt")
-        self.assertTrue(np.allclose(output, expected_image_lower))
-        self.assertTrue(np.allclose(output, expected_image_upper))
+        output_config = EffectConfig()
+        output_config.func = "sqrt"
+        output = globalHDR.edit_globally(input_image, output_config)
+        self.assertTrue(np.allclose(output, expected_image_lower, atol=6e-03))
+        self.assertTrue(np.allclose(output, expected_image_upper, atol=6e-03))
 
     def test_edit_luminance(self):
         """
@@ -39,16 +42,21 @@ class GlobalHDRTest(unittest.TestCase):
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
         ])
         expected_image_lower = np.array([
-            0.078, 0.252, 0.357, 0.565, 0.692, 0.795
+            0.399, 1.264, 1.788, 2.828, 3.464, 3.979
         ])
         expected_image_upper = np.array([
-            0.082, 0.253, 0.358, 0.566, 0.693, 0.796
+            0.400, 1.265, 1.789, 2.829, 3.465, 3.980
         ])
-        lum_scale = 5
-        chrom_scale = .8
-        output = globalHDR.edit_luminance(input_image, lum_scale, chrom_scale)
-        self.assertTrue(np.allclose(output, expected_image_lower))
-        self.assertTrue(np.allclose(output, expected_image_upper))
+        output_config = EffectConfig()
+        output_config.lum_scale = 5
+        output_config.chrom_scale = .8
+
+        input_lum = globalHDR.luminance(input_image)
+        input_chrom = globalHDR.chromasity(input_image, input_lum)
+
+        output = globalHDR.edit_luminance(input_lum, input_chrom, output_config)
+        self.assertTrue(np.allclose(output, expected_image_lower, atol=6e-03))
+        self.assertTrue(np.allclose(output, expected_image_upper, atol=6e-03))
 
 
 if __name__ == '__main__':
