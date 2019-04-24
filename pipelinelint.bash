@@ -14,7 +14,7 @@ coverage run align_image_test.py
 coverage run hdr_test.py
 coverage run globalHDR_test.py
 coverage run localHDR_test.py
-coverage run report
+coverage report
 pros=$(coverage report | grep TOTAL | awk '{print $4}')
 pros=${pros%\%}
 echo $pros
