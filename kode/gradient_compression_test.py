@@ -2,9 +2,9 @@
 A module testing `gradient_compression.py`
 """
 import unittest
+import numpy as np
 import gradient_compression
 from filter_config import GradientFilterConfig
-import numpy as np
 
 
 class GradientCompressionTests(unittest.TestCase):
