@@ -89,7 +89,7 @@ class App(QWidget):
         button_layout.addWidget(self.align_image_button)
         button_layout.setAlignment(Qt.AlignCenter)
 
-        group_box = QGroupBox("Instillinger")
+        group_box = QGroupBox("Innstillinger")
         group_box.setLayout(button_layout)
         group_box.setMaximumWidth(400)
 
@@ -125,13 +125,17 @@ class App(QWidget):
         self.main_image = PlotCanvas(width=5, height=4)
 
     def align_image_set(self):
+        """
+        Aligns the chosen image set (if any)
+        """
         if self.original_image_set is not None:
             try:
                 self.original_image_set = self.original_image_set.aligned_image_set()
                 self.hdr_image = self.original_image_set.hdr_image(10)
                 self.update_image_with_filter()
             except:
-                print("Error")
+                self.status_label.setText("Ups! Det skjedde en feil ved rendering")
+                self.status_label.setStyleSheet("background: red")
 
     def add_global_filter(self):
         """
