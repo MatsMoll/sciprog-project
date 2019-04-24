@@ -38,7 +38,7 @@ class App(QWidget):
         self.add_gaussian_button = QPushButton("Legg til gaussian filter", self)
         self.add_bilateral_button = QPushButton("Legg til bilateral filter", self)
         self.add_gradient_compression_button = QPushButton("Legg til gradient comp. filter", self)
-        self.save_image_button = QPushButton("Leggre bilde", self)
+        self.save_image_button = QPushButton("Lagre bilde", self)
         self.status_label = QLabel("Ingen bilder er lastet inn")
         self.init_ui()
 
