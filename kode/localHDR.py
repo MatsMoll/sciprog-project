@@ -62,7 +62,6 @@ def blur_image(im, blur):
     else:
         im = np.float32(im)
         blurry_im = cv2.bilateralFilter(im, blur.diameter, blur.sigma_space, blur.sigma_color)
-    # globalHDR.show(blurry_im)
     return blurry_im
 
 
@@ -166,7 +165,6 @@ def filter_image(im, filters):
 
     :return:
     """
-    # globalHDR.show(im)
     alpha_exist = has_alpha(im)
     if alpha_exist:
         im, alpha = extract_alpha(im)

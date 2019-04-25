@@ -34,8 +34,6 @@ def show(im):
     :type im: Numpy array.
     """
     im = (im - im.min()) / (im.max() - im.min()).astype(float)
-    # im[im > 1] = 1
-    # im[im <= 0] = 0
     if im.ndim <= 2:
         plt.imshow(im, plt.cm.gray)
     else:
