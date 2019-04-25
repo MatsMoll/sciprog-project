@@ -7,7 +7,6 @@ import numpy as np
 import scipy.ndimage as ndimage
 import cv2
 import globalHDR
-from filter_config import FilterImageConfig
 
 
 def has_alpha(im):
@@ -63,7 +62,6 @@ def blur_image(im, blur):
     else:
         im = np.float32(im)
         blurry_im = cv2.bilateralFilter(im, blur.diameter, blur.sigma_space, blur.sigma_color)
-    # globalHDR.show(blurry_im)
     return blurry_im
 
 
@@ -167,7 +165,6 @@ def filter_image(im, filters):
 
     :return:
     """
-    # globalHDR.show(im)
     alpha_exist = has_alpha(im)
     if alpha_exist:
         im, alpha = extract_alpha(im)
@@ -181,21 +178,3 @@ def filter_image(im, filters):
         filtered_im = append_channel(filtered_im, alpha)
 
     return filtered_im
-
-
-if __name__ == '__main__':
-    input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
-    globalHDR.show(input_im)
-
-    linear_im_config = FilterImageConfig()
-    linear_im_config.blur.linear = False
-    linear_im = filter_image(input_im, linear_im_config)
-    globalHDR.show(linear_im)
-
-    nonlinear_im_config = FilterImageConfig()
-    nonlinear_im_config.blur.linear = False
-    nonlinear_im_config.effect.func = "pow"
-    nonlinear_im_config.effect.level = .1
-    nonlinear_im_config.gamma = 1
-    nonlinear_im = filter_image(input_im, nonlinear_im_config)
-    globalHDR.show(nonlinear_im)

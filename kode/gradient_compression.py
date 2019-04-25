@@ -139,7 +139,9 @@ def gradient_compress_image(im, filter_config):
 
     :return: The new image
     """
-    lum = luminance(im).reshape(im.shape[:-1])
+    lum = luminance(im)
+    if lum.ndim == 3:
+        lum = lum.reshape(im.shape[:-1])
     new_lum = lum
     if filter_config.use_pyramid:
         new_lum = compress_gradient_pyr(np.log(lum), filter_config)
