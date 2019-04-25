@@ -178,8 +178,3 @@ def filter_image(im, filters):
         filtered_im = append_channel(filtered_im, alpha)
 
     return filtered_im
-
-
-if __name__ == '__main__':
-    input_im = globalHDR.read_image("../eksempelbilder/Ocean/Ocean")
-    globalHDR.show(input_im)

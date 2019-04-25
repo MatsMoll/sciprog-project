@@ -150,8 +150,3 @@ def split_image(im, effect):
     lum = luminance(im)
     chroma = chromasity(im, lum)
     return edit_luminance(lum, chroma, effect)
-
-
-if __name__ == '__main__':
-    image = read_image()
-    show(image)
