@@ -50,7 +50,7 @@ class LocalHDRTest(unittest.TestCase):
 
     def test_blur_image_linear(self):
         """
-        Test the linear and non-linear blur image function.
+        Test the linear blur image function.
         """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
@@ -68,6 +68,9 @@ class LocalHDRTest(unittest.TestCase):
         self.assertTrue(np.allclose(output_linear, expected_linear_image_upper, atol=6e-03))
 
     def test_blur_image_nonlinear(self):
+        """
+        Test the non-linear blur image function.
+        """
         input_image = np.array([
             0.01, 0.1, 0.2, 0.5, 0.75, 0.99
         ])
