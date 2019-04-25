@@ -16,7 +16,7 @@ from globalHDR import split_image, edit_globally, read_image
 from image_set import ImageSet
 from localHDR import filter_image
 from filter_config import FilterImageConfig, EffectConfig, GradientFilterConfig
-from gradient_compression import gradient_compress_color
+from gradient_compression import gradient_compress_image
 
 
 class App(QWidget):
@@ -602,7 +602,7 @@ class GradientCompressionFilterWidget(FilterWidget):
         config = GradientFilterConfig()
         config.func = self.filter_function
         config.use_pyramid = self.use_pyramide_checkbox.checkState() == Qt.Checked
-        return gradient_compress_color(image, config)
+        return gradient_compress_image(image, config)
 
 
 class PlotCanvas(FigureCanvas):

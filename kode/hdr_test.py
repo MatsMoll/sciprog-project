@@ -43,9 +43,6 @@ class HDRTest(unittest.TestCase):
 
         return rand_im, im_set
 
-    def setUp(self):
-        pass
-
     def test_weighting_function(self):
         """
         Tests the hdr.standard_weighting(...) function
@@ -183,6 +180,7 @@ class HDRTest(unittest.TestCase):
         diff = np.abs(rand_im - scaled).sum()
         self.assertEqual(output.shape, (x, y, 3))
         self.assertTrue(diff < 0.5 * x * y * 3)
+
 
 if __name__ == '__main__':
     unittest.main()

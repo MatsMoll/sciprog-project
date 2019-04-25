@@ -103,5 +103,6 @@ class FilterWidgetTest(unittest.TestCase):
         self.assertEqual(self.filter_removed_was_called, True)
         self.assertEqual(self.removed_filter, self.filter_widget)
 
+
 if __name__ == '__main__':
     unittest.main()

@@ -90,7 +90,7 @@ class GradientCompressionTests(unittest.TestCase):
                 self.assertEqual(div[x, y, 0], expected_x)
                 self.assertEqual(div[x, y, 1], expected_y)
 
-    def test_compress_gradient_color(self):
+    def test_compress_gradient_image(self):
         """
         Tests that `gradient_compress_color(image)` returns the correct type
         """
@@ -98,11 +98,11 @@ class GradientCompressionTests(unittest.TestCase):
 
         config = GradientFilterConfig()
         config.func = lambda x: x
-        result = gradient_compression.gradient_compress_color(test_im, config)
+        result = gradient_compression.gradient_compress_image(test_im, config)
         self.assertEqual(test_im.shape, result.shape)
 
         config.use_pyramid = True
-        result = gradient_compression.gradient_compress_color(test_im, config)
+        result = gradient_compression.gradient_compress_image(test_im, config)
         self.assertEqual(test_im.shape, result.shape)
 
 

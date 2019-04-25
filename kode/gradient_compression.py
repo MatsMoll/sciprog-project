@@ -127,7 +127,7 @@ def compress_gradient_pyr(original, filter_config):
     return initial_value
 
 
-def gradient_compress_color(im, filter_config):
+def gradient_compress_image(im, filter_config):
     """
     Compresses the gradient of a color image
 

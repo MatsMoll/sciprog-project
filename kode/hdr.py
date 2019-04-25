@@ -156,6 +156,6 @@ def find_reference_points_for(images):
     """
     channels = images.channels()
     shape = np.shape(channels)
-    im_len = shape[-2] * shape[-1]
-    spacing = max(int(im_len / 1000), 1)
-    return np.arange(0, im_len, spacing)
+    n_pixels = shape[-2] * shape[-1]
+    spacing = max(int(n_pixels / 1000), 1)
+    return np.arange(0, n_pixels, spacing)
