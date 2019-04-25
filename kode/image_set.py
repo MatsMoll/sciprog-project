@@ -48,15 +48,6 @@ class ImageSet:
             if images:
                 self.original_shape = np.shape(self.images[0])
                 self.shutter_speed = np.array(self.shutter_speed)
-            #self.images[self.images <= 0] = 1
-
-            #shutter_base = (self.images[1] / self.images[0]).mean()
-            #print(shutter_base)
-
-            #for i in range(1, self.images.shape[0]):
-            #    self.shutter_speed[i] = np.log(np.exp(self.shutter_speed[0]) * 1.3 ** i)
-            #    print(self.shutter_speed[i])
-            #print(self.shutter_speed)
 
         else:
             self.images = images.copy()
@@ -72,18 +63,6 @@ class ImageSet:
         """
         channels = self.channels()
         curve = self.hdr_curve(smoothness)
-
-        #if len(curve) == 2:
-        #    plt.plot(np.arange(0, 256), curve[0])
-        #    plt.show()
-        #    plt.plot(np.arange(0, 256), np.exp(curve[0]))
-        #    plt.show()
-        #else:
-        #    for i in range(0, len(curve)):
-        #        plt.plot(np.arange(0, 256), curve[i][0])
-        #        plt.show()
-        #        plt.plot(np.arange(0, 256), np.exp(curve[i][0]))
-        #        plt.show()
 
         output_image = np.zeros(self.original_shape[:-1] + (3,))
         if channels.ndim == 3:

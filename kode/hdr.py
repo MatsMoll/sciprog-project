@@ -113,9 +113,7 @@ def hdr_color_channels(channels, shutter, smoothness):
         one_dim_channels = channels.reshape((shape[0], shape[1], shape[2] * shape[3]))
 
     for channel in one_dim_channels:
-        print("HDR")
         g, ln_e = hdr_channel(channel, shutter, smoothness, standard_weighting)
-        print("Done")
         result.append((g, ln_e))
     return result
 

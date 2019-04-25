@@ -3,8 +3,6 @@ A module that aligns images
 """
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
-
 
 def align_images(images):
     """
@@ -126,16 +124,3 @@ def crop_images(images):
         y_1 += 1
 
     return images[:, y_1:y_2 + 1, x_1:x_2 + 1]
-
-
-if __name__ == '__main__':
-    from image_set import test_image_set
-
-    test_image_set = test_image_set()
-    im_set = test_image_set
-
-    im = im_set.hdr_image(10)[:, :, 0:3] ** 0.2
-    print("Im Done")
-    print((im - im.min()) / (im.max() - im.min()))
-    plt.imshow((im - im.min()) / (im.max() - im.min()))
-    plt.show()
