@@ -19,16 +19,16 @@ class LocalHDRTest(unittest.TestCase):
         Tests the last dimension of input arrays to see if they have
             a fourth channel (dimension) present.
         """
-        image_3d = np.array([[  # One image with shape (1, 2, 3) ## Rename to image_3d
+        image_3d = np.array([[  # One image with shape (1, 2, 3)
             [1, 2, 3],
             [4, 5, 6]
         ]])
-        image_4d = np.array([[  # One image with shape (1, 3, 4) ## Rename to image_4d
+        image_4d = np.array([[  # One image with shape (1, 3, 4)
             [1, 2, 3, 4],
             [4, 5, 6, 7],
             [8, 9, 10, 11]
         ]])
-        image_5d = np.array([[  # One image with shape (1, 1, 5) ## Rename to image_5d
+        image_5d = np.array([[  # One image with shape (1, 1, 5)
             [1, 2, 3, 4, 5]
         ]])
         self.assertEqual(localHDR.has_alpha(image_3d), False)
