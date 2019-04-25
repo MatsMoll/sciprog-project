@@ -250,11 +250,11 @@ class App(QWidget):
         """
         Saves a image to a path that is selected by the user
         """
-        file_name, ok = QFileDialog.getSaveFileName(self, "Lagre bilde", "", "PNG (*.png)")
+        file_name, ok = QFileDialog.getSaveFileName(self, "Lagre bilde", "", "PNG (*.png);;EXR (*.exr)")
 
         if ok and file_name and self.hdr_image.any():
             try:
-                imwrite(file_name, self.apply_filters())
+                imwrite(file_name, self.edited_image)
                 self.status_label.setText("Bilde ble lagret")
                 self.status_label.setStyleSheet("background: green")
             except:
