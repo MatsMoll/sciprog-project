@@ -568,7 +568,7 @@ class BilateralFilterWidget(FilterWidget):
 
         self.gamma_slider = SliderWidget(value_did_change_function, "Gamma")
 
-        self.use_global_filter_checkbox = QCheckBox("Rediger globalt (✅) eller luminans")
+        self.use_global_filter_checkbox = QCheckBox("Rediger globalt (x) eller luminans ( )")
         self.use_global_filter_checkbox.stateChanged.connect(self.value_did_change_function)
 
         self.effect_layout.addWidget(self.sigma_color_slider)
