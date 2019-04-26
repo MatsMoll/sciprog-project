@@ -6,6 +6,7 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QSizePolicy, \
     QPushButton, QInputDialog, QSlider, QGroupBox, QWidget, QLabel, QFileDialog, QScrollArea, QCheckBox
+from PyQt5.QtGui import QFont
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -355,7 +356,7 @@ class FilterWidget(QWidget):
     A Widget that presents a filter setting
     """
 
-    def __init__(self, value_did_change_function, remove_filter_function, parent=None):
+    def __init__(self, value_did_change_function, remove_filter_function, parent=None, title="Globalt filter"):
         super(FilterWidget, self).__init__(parent)
         self.selected_filter_index = 0
         self.filter_options = ["ingen", "e", "ln", "pow", "sqrt", "gamma"]
@@ -368,6 +369,9 @@ class FilterWidget(QWidget):
         self.value_did_change_function = value_did_change_function
         self.effect_slider = SliderWidget(value_did_change_function, "Effekt styrke")
         self.effect_layout = QVBoxLayout(self)
+        title_label = QLabel(title)
+        title_label.setFont(QFont("QFont", 20, QFont.Bold))
+        self.effect_layout.addWidget(title_label)
         self.init_ui()
 
     def init_ui(self):
@@ -450,7 +454,8 @@ class LumimanceFilterWidget(FilterWidget):
     """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
-        super(LumimanceFilterWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
+        super(LumimanceFilterWidget, self).__init__(value_did_change_function,
+                                                    remove_filter_function, parent, title="Luminans filter")
         self.luminance_slider = SliderWidget(value_did_change_function, "Luminance")
         self.chromasity_slider = SliderWidget(value_did_change_function, "Chromasity")
         self.effect_layout.addWidget(self.luminance_slider)
@@ -490,14 +495,15 @@ class GaussianFilterWidget(FilterWidget):
     """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
-        super(GaussianFilterWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
+        super(GaussianFilterWidget, self).__init__(value_did_change_function, remove_filter_function,
+                                                   parent, title="Gaussian filter")
 
         self.sigma_slider = SliderWidget(value_did_change_function, "Sigma")
         self.sigma_slider.fraction_value = 1
         self.sigma_slider.effect_slider.setMaximum(20)
         self.sigma_slider.effect_slider.setValue(3)
 
-        self.use_global_filter_checkbox = QCheckBox("Regiger globalt eller luminans (på/av)")
+        self.use_global_filter_checkbox = QCheckBox("Rediger globalt (x) eller luminans ( )")
         self.use_global_filter_checkbox.stateChanged.connect(self.value_did_change_function)
 
         self.remove_filter_function = remove_filter_function
@@ -538,7 +544,8 @@ class BilateralFilterWidget(FilterWidget):
     """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
-        super(BilateralFilterWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
+        super(BilateralFilterWidget, self).__init__(value_did_change_function, remove_filter_function,
+                                                    parent, title="Bilateral filter")
 
         self.sigma_space_slider = SliderWidget(value_did_change_function, "Sigma Space")
         self.sigma_space_slider .fraction_value = 1
@@ -555,7 +562,7 @@ class BilateralFilterWidget(FilterWidget):
         self.diameter_slider.effect_slider.setMaximum(15)
         self.diameter_slider.effect_slider.setValue(5)
 
-        self.use_global_filter_checkbox = QCheckBox("Regiger globalt eller luminans (på/av)")
+        self.use_global_filter_checkbox = QCheckBox("Rediger globalt (✅) eller luminans")
         self.use_global_filter_checkbox.stateChanged.connect(self.value_did_change_function)
 
         self.effect_layout.addWidget(self.sigma_color_slider)
@@ -593,11 +600,27 @@ class GradientCompressionFilterWidget(FilterWidget):
     """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
-        super(GradientCompressionFilterWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
+        super(GradientCompressionFilterWidget, self).__init__(value_did_change_function, remove_filter_function,
+                                                              parent, title="Gradient kompresjons filter")
 
         self.use_pyramide_checkbox = QCheckBox("Bruk Gaussian pyramide")
         self.use_pyramide_checkbox.stateChanged.connect(self.value_did_change_function)
 
+        self.saturation_slider = SliderWidget(value_did_change_function, "Fargemettning")
+
+        self.iteration_amount_slider = SliderWidget(value_did_change_function, "Antall Gradient Discent steg")
+        self.iteration_amount_slider.fraction_value = 1
+        self.iteration_amount_slider.effect_slider.setMaximum(200)
+        self.iteration_amount_slider.effect_slider.setValue(10)
+
+        self.iteration_distance_slider = SliderWidget(value_did_change_function, "Gradient Discent lengde")
+        self.iteration_distance_slider.fraction_value = 1
+        self.iteration_distance_slider.effect_slider.setMaximum(200)
+        self.iteration_distance_slider.effect_slider.setValue(10)
+
+        self.effect_layout.addWidget(self.saturation_slider)
+        self.effect_layout.addWidget(self.iteration_amount_slider)
+        self.effect_layout.addWidget(self.iteration_distance_slider)
         self.effect_layout.addWidget(self.use_pyramide_checkbox)
 
     def filter_function(self, im):
@@ -617,6 +640,9 @@ class GradientCompressionFilterWidget(FilterWidget):
     def apply_filter(self, image):
         config = GradientFilterConfig()
         config.func = self.filter_function
+        config.iteration_amount = int(self.iteration_amount_slider.value())
+        config.iteration_distance = int(self.iteration_distance_slider.value())
+        config.saturation = self.saturation_slider.value()
         config.use_pyramid = self.use_pyramide_checkbox.checkState() == Qt.Checked
         return gradient_compress_image(image, config)
 
