@@ -484,29 +484,26 @@ class LumimanceFilterWidget(FilterWidget):
         return split_image(image, config)
 
 
-class GaussianFilterWidget(QWidget):
+class GaussianFilterWidget(FilterWidget):
     """
     A filter that apply a gaussian local rendering filter to the image
     """
 
     def __init__(self, value_did_change_function, remove_filter_function, parent=None):
-        super(GaussianFilterWidget, self).__init__(parent)
+        super(GaussianFilterWidget, self).__init__(value_did_change_function, remove_filter_function, parent)
 
         self.sigma_slider = SliderWidget(value_did_change_function, "Sigma")
         self.sigma_slider.fraction_value = 1
         self.sigma_slider.effect_slider.setMaximum(20)
         self.sigma_slider.effect_slider.setValue(3)
 
-        self.remove_button = QPushButton("Slett", self)
-        self.remove_button.clicked.connect(self.remove_widget_was_clicked)
+        self.use_global_filter_checkbox = QCheckBox("Regiger globalt eller luminans (på/av)")
+        self.use_global_filter_checkbox.stateChanged.connect(self.value_did_change_function)
 
         self.remove_filter_function = remove_filter_function
 
-        effect_layout = QVBoxLayout()
-        effect_layout.addWidget(self.remove_button)
-        effect_layout.addWidget(self.sigma_slider)
-
-        self.setLayout(effect_layout)
+        self.effect_layout.addWidget(self.sigma_slider)
+        self.effect_layout.addWidget(self.use_global_filter_checkbox)
 
     def remove_widget_was_clicked(self):
         """
@@ -524,8 +521,14 @@ class GaussianFilterWidget(QWidget):
         :return: A new image with the filter on
         """
         config = FilterImageConfig()
-        config.effect.mode = "nothing"
+        config.effect.func = self.filter_options[self.selected_filter_index]
         config.blur.sigma = self.sigma_slider.value()
+
+        if self.use_global_filter_checkbox.checkState() == Qt.Checked:
+            config.effect.mode = "global"
+        else:
+            config.effect.mode = "luminance"
+
         return filter_image(image, config)
 
 
@@ -552,9 +555,13 @@ class BilateralFilterWidget(FilterWidget):
         self.diameter_slider.effect_slider.setMaximum(15)
         self.diameter_slider.effect_slider.setValue(5)
 
+        self.use_global_filter_checkbox = QCheckBox("Regiger globalt eller luminans (på/av)")
+        self.use_global_filter_checkbox.stateChanged.connect(self.value_did_change_function)
+
         self.effect_layout.addWidget(self.sigma_color_slider)
         self.effect_layout.addWidget(self.sigma_space_slider)
         self.effect_layout.addWidget(self.diameter_slider)
+        self.effect_layout.addWidget(self.use_global_filter_checkbox)
 
     def apply_filter(self, image):
         """
@@ -572,6 +579,11 @@ class BilateralFilterWidget(FilterWidget):
         config.blur.sigma_space = int(self.sigma_space_slider.value())
         config.blur.diameter = int(self.diameter_slider.value())
         config.blur.linear = False
+
+        if self.use_global_filter_checkbox.checkState() == Qt.Checked:
+            config.effect.mode = "global"
+        else:
+            config.effect.mode = "luminance"
         return filter_image(image, config)
 
 
