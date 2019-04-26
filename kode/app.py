@@ -503,12 +503,15 @@ class GaussianFilterWidget(FilterWidget):
         self.sigma_slider.effect_slider.setMaximum(20)
         self.sigma_slider.effect_slider.setValue(3)
 
+        self.gamma_slider = SliderWidget(value_did_change_function, "Gamma")
+
         self.use_global_filter_checkbox = QCheckBox("Rediger globalt (x) eller luminans ( )")
         self.use_global_filter_checkbox.stateChanged.connect(self.value_did_change_function)
 
         self.remove_filter_function = remove_filter_function
 
         self.effect_layout.addWidget(self.sigma_slider)
+        self.effect_layout.addWidget(self.gamma_slider)
         self.effect_layout.addWidget(self.use_global_filter_checkbox)
 
     def remove_widget_was_clicked(self):
@@ -529,6 +532,7 @@ class GaussianFilterWidget(FilterWidget):
         config = FilterImageConfig()
         config.effect.func = self.filter_options[self.selected_filter_index]
         config.blur.sigma = self.sigma_slider.value()
+        config.gamma = self.gamma_slider.value()
 
         if self.use_global_filter_checkbox.checkState() == Qt.Checked:
             config.effect.mode = "global"
@@ -562,12 +566,15 @@ class BilateralFilterWidget(FilterWidget):
         self.diameter_slider.effect_slider.setMaximum(15)
         self.diameter_slider.effect_slider.setValue(5)
 
+        self.gamma_slider = SliderWidget(value_did_change_function, "Gamma")
+
         self.use_global_filter_checkbox = QCheckBox("Rediger globalt (✅) eller luminans")
         self.use_global_filter_checkbox.stateChanged.connect(self.value_did_change_function)
 
         self.effect_layout.addWidget(self.sigma_color_slider)
         self.effect_layout.addWidget(self.sigma_space_slider)
         self.effect_layout.addWidget(self.diameter_slider)
+        self.effect_layout.addWidget(self.gamma_slider)
         self.effect_layout.addWidget(self.use_global_filter_checkbox)
 
     def apply_filter(self, image):
@@ -586,6 +593,7 @@ class BilateralFilterWidget(FilterWidget):
         config.blur.sigma_space = int(self.sigma_space_slider.value())
         config.blur.diameter = int(self.diameter_slider.value())
         config.blur.linear = False
+        config.gamma = self.gamma_slider.value()
 
         if self.use_global_filter_checkbox.checkState() == Qt.Checked:
             config.effect.mode = "global"

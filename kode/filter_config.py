@@ -68,7 +68,7 @@ class FilterImageConfig:
     :type effect: EffectConfig class.
 
     :attr gamma: Weighting of details.
-    :type gamma: Int.
+    :type gamma: Float.
     """
 
     blur = BlurImageConfig()
