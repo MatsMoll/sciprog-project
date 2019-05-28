@@ -2,7 +2,13 @@
 
 Oppgaveteksten ligger i katalogen `oppgave`. Kildekoden dere lager skal ligge i katalogen `src` og rapporten skal ligge i `rapport`.
 
-## Start GUI
+## GUI
+
+<p align="center">
+<img src="gui-example.png" alt="GUI Preview"/>
+</p>
+
+### Start GUI
 
 Kjør komandone under for å laste ned de nødvendige rammeverkene og for å kjøre GUI-en.
 ```bash
